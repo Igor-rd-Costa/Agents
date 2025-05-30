@@ -1,0 +1,31 @@
+**.idea
+agents_front/node_modules
+
+# Logs
+agents_front/logs
+agents_front/*.log
+agents_front/npm-debug.log*
+agents_front/yarn-debug.log*
+agents_front/yarn-error.log*
+agents_front/pnpm-debug.log*
+agents_front/lerna-debug.log*
+
+agents_front/dist
+agents_front/dist-ssr
+agents_front/*.local
+
+# Editor directories and files
+agents_front/.vscode/*
+agents_front/!.vscode/extensions.json
+agents_front/.idea
+agents_front/.DS_Store
+agents_front/*.suo
+agents_front/*.ntvs*
+agents_front/*.njsproj
+agents_front/*.sln
+agents_front/*.sw?
+
+agents_back/Agents_Backend.egg-info
+agents_back/**/__pycache__
+agents_back/.env
+agents_back/alembic.ini
