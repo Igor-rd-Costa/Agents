@@ -40,7 +40,6 @@ def verify_access_token(token: str, credentials_exception: HTTPException):
         raise credentials_exception # JWT decoding/validation failed
     return token_data
 
-# --- Password Utility Functions (from previous step) ---
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 

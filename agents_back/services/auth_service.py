@@ -1,5 +1,5 @@
 # agents_back/services/auth_service.py
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 from typing import Optional
@@ -16,10 +16,7 @@ from agents_back.core.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     Token
 )
-from agents_back.types.auth import LoginDTO
 
-# Initialize OAuth2PasswordBearer
-# This tells FastAPI that the "Authorization" header should be of type "Bearer"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login") # Adjust tokenUrl to your actual login endpoint
 
 class AuthService:
@@ -52,10 +49,7 @@ class AuthService:
 
     async def authenticate_user(self, username_or_email: str, password: str) -> Optional[User]:
         user = self.session.exec(
-            select(User).where(
-                (User.username == username_or_email) |
-                (User.email == username_or_email)
-            )
+            select(User).where((User.normalizedEmail == username_or_email.upper()))
         ).first()
 
         if not user or not verify_password(password, user.password):
@@ -65,14 +59,14 @@ class AuthService:
     async def create_token_for_user(self, user: User) -> Token:
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user.username},
+            data={"sub": user.email},
             expires_delta=access_token_expires
         )
         return Token(access_token=access_token, token_type="bearer")
 
     async def get_current_user(
         self,
-        token: str = Depends(oauth2_scheme),
+        request: Request,
         session: Session = Depends(get_session)
     ) -> User:
         credentials_exception = HTTPException(
@@ -80,6 +74,7 @@ class AuthService:
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+        token = request.cookies.get('auth_token')
         try:
             token_data: TokenData = verify_access_token(token, credentials_exception)
             if token_data.sub is None:
@@ -87,7 +82,7 @@ class AuthService:
         except Exception: # Catch any exception from verify_access_token (e.g., JWT decode error, expiration)
             raise credentials_exception
 
-        user = session.exec(select(User).where(User.username == token_data.sub)).first()
+        user = session.exec(select(User).where(User.normalizedEmail == token_data.sub.upper())).first()
         if user is None:
             raise credentials_exception # User not found in DB or token subject is invalid
         return user

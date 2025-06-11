@@ -3,14 +3,21 @@ import Button from '@mui/material/Button';
 import TextField from "@mui/material/TextField";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
-import React, {useRef} from "react";
-import {authService} from "@/services/AuthService";
+import React, {useContext, useEffect, useRef} from "react";
+import AuthContext from "@/contexes/authContext";
 
 export default function Page() {
     const router = useRouter();
+    const { user, setUser, authService } = useContext(AuthContext);
     const usernameInput = useRef<HTMLInputElement>(null);
     const emailInput = useRef<HTMLInputElement>(null);
     const passwordInput = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (user) {
+            router.push("/");
+        }
+    }, [user, router]);
 
     const onRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -20,7 +27,9 @@ export default function Page() {
         if (!username || !email || !password) {
             return;
         }
-        if (await authService.Register({username, email, password})) {
+        const u = await authService.Register({username, email, password});
+        if (u) {
+            setUser(u);
             router.push("/");
         }
     }

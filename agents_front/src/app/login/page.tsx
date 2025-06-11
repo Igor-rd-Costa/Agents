@@ -1,15 +1,22 @@
 'use client'
-import React, {useRef} from 'react'
+import React, {useContext, useEffect, useRef} from 'react'
 import Link from 'next/link'
 import Button from '@mui/material/Button';
 import TextField from "@mui/material/TextField";
 import {useRouter} from "next/navigation";
-import {authService} from "../../services/AuthService";
+import AuthContext from "@/contexes/authContext";
 
 export default function Page() {
     const router = useRouter();
+    const { user, setUser, authService } = useContext(AuthContext);
     const emailInput = useRef<HTMLInputElement>(null);
     const passwordInput = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (user) {
+            router.push("/");
+        }
+    }, [user, router]);
 
     const onLogin = async (e: React.FormEvent)=> {
         e.preventDefault();
@@ -18,10 +25,10 @@ export default function Page() {
         if (!email || !password) {
             return;
         }
-        const token = await authService.Login({email, password});
-        if (token) {
-            console.log("Got token:", token)
-            //router.push("/");
+        const u = await authService.Login({email, password});
+        if (u) {
+            setUser(u);
+            router.push("/");
         }
     }
 

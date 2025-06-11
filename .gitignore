@@ -28,4 +28,5 @@ agents_front/*.sw?
 agents_back/Agents_Backend.egg-info
 agents_back/**/__pycache__
 agents_back/.env
+agents_back/.venv
 agents_back/alembic.ini
