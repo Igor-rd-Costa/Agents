@@ -1,12 +1,11 @@
 # agents_back/services/auth_service.py
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
-from sqlmodel import Session, select
 from typing import Optional
 from datetime import timedelta
 
 from agents_back.models.user import User # Your User SQLModel
-from agents_back.db import get_session
+from agents_back.db import get_db
 from agents_back.core.security import (
     hash_password,
     verify_password,
@@ -16,19 +15,16 @@ from agents_back.core.security import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     Token
 )
+from agents_back.types.auth import RegisterDTO
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login") # Adjust tokenUrl to your actual login endpoint
 
 class AuthService:
-    def __init__(self, session: Session = Depends(get_session)):
-        self.session = session
+    def __init__(self, db = Depends(get_db)):
+        self.db = db
 
-    async def register_user(self, info: User) -> User:
-        existing_user = self.session.exec(
-            select(User).where(
-                (User.normalizedEmail == info.email.upper())
-            )
-        ).first()
+    async def register_user(self, info: RegisterDTO) -> User:
+        existing_user = await self.db["users"].find_one({"normalizedEmail": info.email.upper()})
 
         if existing_user:
             raise HTTPException(
@@ -36,21 +32,19 @@ class AuthService:
             )
 
         hashed_password = hash_password(info.password)
-        db_user = User(
-            username=info.username,
-            email=info.email,
-            normalizedEmail=info.email.upper(),
-            password=hashed_password
-        )
-        self.session.add(db_user)
-        self.session.commit()
-        self.session.refresh(db_user)
-        return db_user
+        db_user = {
+            "username": info.username,
+            "email": info.email,
+            "normalizedEmail": info.email.upper(),
+            "password": hashed_password
+        }
 
-    async def authenticate_user(self, username_or_email: str, password: str) -> Optional[User]:
-        user = self.session.exec(
-            select(User).where((User.normalizedEmail == username_or_email.upper()))
-        ).first()
+        result = await self.db["users"].insert_one(db_user)
+        db_user["_id"] = result.inserted_id
+        return User(**db_user)
+
+    async def authenticate_user(self, email: str, password: str) -> Optional[User]:
+        user = User(**await self.db["users"].find_one({"normalizedEmail": email.upper()}))
 
         if not user or not verify_password(password, user.password):
             return None
@@ -66,8 +60,7 @@ class AuthService:
 
     async def get_current_user(
         self,
-        request: Request,
-        session: Session = Depends(get_session)
+        request: Request
     ) -> User:
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -82,11 +75,11 @@ class AuthService:
         except Exception: # Catch any exception from verify_access_token (e.g., JWT decode error, expiration)
             raise credentials_exception
 
-        user = session.exec(select(User).where(User.normalizedEmail == token_data.sub.upper())).first()
+        user = await self.db["users"].find_one({"normalizedEmail": token_data.sub.upper()})
         if user is None:
             raise credentials_exception # User not found in DB or token subject is invalid
         return user
 
 # Helper dependency to get an AuthService instance
-def get_auth_service(session: Session = Depends(get_session)):
-    return AuthService(session)
+def get_auth_service(db = Depends(get_db)):
+    return AuthService(db)

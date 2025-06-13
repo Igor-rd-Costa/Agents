@@ -2,14 +2,12 @@ from fastapi import APIRouter,Request, Depends
 from fastapi.responses import StreamingResponse
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
-from sqlmodel import Session
-from agents_back.db import get_session
 from agents_back.services.auth_service import AuthService, get_auth_service
 
 router = APIRouter(prefix="/agents")
 
 @router.get("/")
-async def get(query: str, request: Request, auth_service: AuthService = Depends(get_auth_service), session: Session = Depends(get_session)):
+async def get(query: str, request: Request, auth_service: AuthService = Depends(get_auth_service)):
     #user = await auth_service.get_current_user(request, session)
     template = ChatPromptTemplate.from_messages([
         ("system", "Você é um assistente amigável e sua função é responder as perguntas que forem enviadas pelo usuário."),

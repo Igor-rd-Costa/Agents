@@ -29,6 +29,10 @@ export default function Home() {
             return;
         }
         const value = input.current.value;
+        if (value === "") {
+            return;
+        }
+
         setMessage("");
         try {
             eventSourceRef.current = new EventSource(`http://localhost:8000/agents/?query=${encodeURIComponent(value)}`);
@@ -40,7 +44,7 @@ export default function Home() {
             };
 
             eventSourceRef.current.onerror = (error) => {
-                console.log("Error", error)
+                console.error("EventSourceError", error)
                 eventSourceRef.current?.close();
             };
 
@@ -48,17 +52,6 @@ export default function Home() {
                 setEndToggle(!endToggle);
                 eventSourceRef.current?.close();
             });
-
-            // When the stream finishes (server closes the connection)
-            eventSourceRef.current.onopen = () => {
-                console.log('EventSource connection opened.');
-            };
-
-            // You'll need a way for the server to signal completion,
-            // or rely on the connection closing.
-            // For a chat, the connection might stay open for a while.
-            // If the server explicitly sends a "done" message, you can listen for it.
-
         } catch (error) {
             console.error('Error initiating stream:', error);
         }
@@ -73,7 +66,7 @@ export default function Home() {
                 <div className="w-[15rem] border border-primary rounded-md">
 
                 </div>
-                <div className="overflow-y-scroll flex flex-col gap-y-4">
+                <div className="overflow-y-scroll gap-y-4 flex flex-col">
                     {messages.map((m, i) =>
                         <Message key={i} icon={m.src} content={m.content}/>
                     )}
