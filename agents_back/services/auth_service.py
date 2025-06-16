@@ -40,7 +40,7 @@ class AuthService:
         }
 
         result = await self.db["users"].insert_one(db_user)
-        db_user["_id"] = result.inserted_id
+        db_user["id"] = result.inserted_id
         return User(**db_user)
 
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:

@@ -1,6 +1,5 @@
 import SmartToy from "@mui/icons-material/SmartToy"
 import Person from "@mui/icons-material/Person"
-import CopyAll from "@mui/icons-material/CopyAll"
 import {CSSProperties} from "react";
 
 export type MessageIcon = 'agent' | 'user'
