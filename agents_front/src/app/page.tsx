@@ -5,6 +5,7 @@ import {useContext, useEffect, useRef, useState} from "react";
 import axios from "axios";
 import ChatsSection from "@/components/mainPage/ChatsSection";
 import ChatContext from "@/contexes/chatContext";
+import chatService from "@/services/ChatService";
 
 type MessageDTO = {
     src: MessageIcon,
@@ -37,38 +38,40 @@ export default function Home() {
         }
 
         setMessage("");
-        try {
-            eventSourceRef.current = new EventSource(`http://localhost:8000/agents/?query=${encodeURIComponent(value)}`);
+        const chat = chatContext.chat;
+        setMessages(m => [...m, {src: 'user', content: value}]);
+        const result = chatService.sendMessage(chat.id, value);
+        result.onData(data => {
+            setMessage(m => m + data);
+        });
+        result.onError(error => {
+            console.error("StreamingResponse Error", error);
+        })
+        result.onFinish(() => {
+            setMessages(m => [...m, {src: 'agent', content: message}]);
+            setMessage("");
+        })
 
-            setMessages(m => [...m, {src: 'user', content: value}]);
-            eventSourceRef.current.onmessage = (event) => {
-                setMessage(prev => prev + event.data);
-            };
-
-            eventSourceRef.current.onerror = (error) => {
-                console.error("EventSourceError", error)
-                eventSourceRef.current?.close();
-            };
-
-            eventSourceRef.current.addEventListener('end', () => {
-                setEndToggle(!endToggle);
-                eventSourceRef.current?.close();
-            });
-        } catch (error) {
-            console.error('Error initiating stream:', error);
-        }
-    }
-
-    const testSubmit = async () => {
-        console.log("Submit");
-        const {status, data} = await axios.post('http://localhost:8000/agents/');
-        console.log({status, data});
-    }
-
-    const testQuery = async () => {
-        console.log("Query");
-        const {status, data} = await axios.get('http://localhost:8000/agents/test');
-        console.log({status, data});
+        //try {
+        //    eventSourceRef.current = new EventSource(`http://localhost:8000/agents/?query=${encodeURIComponent(value)}`);
+//
+        //    setMessages(m => [...m, {src: 'user', content: value}]);
+        //    eventSourceRef.current.onmessage = (event) => {
+        //        setMessage(prev => prev + event.data);
+        //    };
+//
+        //    eventSourceRef.current.onerror = (error) => {
+        //        console.error("EventSourceError", error)
+        //        eventSourceRef.current?.close();
+        //    };
+//
+        //    eventSourceRef.current.addEventListener('end', () => {
+        //        setEndToggle(!endToggle);
+        //        eventSourceRef.current?.close();
+        //    });
+        //} catch (error) {
+        //    console.error('Error initiating stream:', error);
+        //}
     }
 
     return (

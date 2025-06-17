@@ -4,14 +4,13 @@ from fastapi import Depends
 
 from agents_back.db import get_db
 from agents_back.models.chat import Chat
-from motor import MotorCollection, MotorDatabase
 
 from agents_back.types.general import ObjectId
 
 
 class ChatService:
 
-    def __init__(self, db: MotorDatabase):
+    def __init__(self, db):
         self.db = db
 
     async def create_empty_chat(self):

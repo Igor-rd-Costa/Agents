@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
+
+from agents_back.types.chat import Message
 from agents_back.types.general import ObjectId
 from datetime import datetime
 
@@ -9,6 +11,7 @@ class Chat(BaseModel):
     name: str
     created_at: datetime
     updated_at: datetime
+    messages: list[Message]
 
     model_config = {
         "populate_by_name": True,
@@ -25,4 +28,5 @@ class Chat(BaseModel):
             name="Nova Conversa",
             created_at=datetime.now(),
             updated_at=datetime.now(),
+            messages=[]
         )

@@ -1,8 +1,11 @@
-from typing import Optional
+from pydantic import BaseModel
 
 from agents_back.types.general import ObjectId
 
+class Message(BaseModel):
+    source: str
+    content: str
 
-class ChatDTO:
-    id: Optional[ObjectId]
+class ChatDTO(BaseModel):
+    id: ObjectId|None
     message: str

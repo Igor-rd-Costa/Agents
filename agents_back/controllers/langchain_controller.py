@@ -9,6 +9,8 @@ from langchain_mongodb import MongoDBAtlasVectorSearch
 from uuid import uuid4
 import os
 
+from agents_back.utils.responses import stream_llm_response
+
 router = APIRouter(prefix="/agents")
 
 EMBEDDING_MODELS = {
@@ -31,18 +33,19 @@ async def get(query: str, request: Request, auth_service: AuthService = Depends(
     #user = await auth_service.get_current_user(request, session)
     template = ChatPromptTemplate.from_messages([
         ("system", "Você é um assistente amigável e sua função é responder as perguntas que forem enviadas pelo usuário."),
-        ("user", "{query}")
+        ("user", query)
     ])
     chat = ChatGroq(model="llama-3.3-70b-versatile")
     chain = template | chat
 
-    async def generate_stream():
-        async for chunk in chain.astream({"query": query}):
-            if chunk.content:
-                yield f"data: {chunk.content}\n\n".encode("utf-8")
-        yield b"event: end\ndata: [DONE]\n\n"
-
-    return StreamingResponse(generate_stream(), media_type="text/event-stream")
+    #async def generate_stream():
+    #    async for chunk in chain.astream({"query": query}):
+    #        if chunk.content:
+    #            yield f"data: {chunk.content}\n\n".encode("utf-8")
+    #    yield b"event: end\ndata: [DONE]\n\n"
+#
+    #return StreamingResponse(generate_stream(), media_type="text/event-stream")
+    return stream_llm_response(chain)
 
 
 
