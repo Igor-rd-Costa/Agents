@@ -1,14 +1,14 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 from agents_back.types.general import ObjectId
-import datetime
+from datetime import datetime
 
 class Chat(BaseModel):
-    id: Optional[ObjectId] = Field(default_factory=ObjectId)
+    id: Optional[ObjectId] = Field(default_factory=ObjectId, alias="_id")
     user_id: Optional[ObjectId] = Field(default_factory=ObjectId)
     name: str
-    created_at: datetime.datetime
-    updated_at: datetime.datetime
+    created_at: datetime
+    updated_at: datetime
 
     model_config = {
         "populate_by_name": True,
@@ -17,3 +17,12 @@ class Chat(BaseModel):
             ObjectId: str
         }
     }
+
+    @staticmethod
+    def empty(user: ObjectId|None):
+        return Chat(
+            user_id=user,
+            name="Nova Conversa",
+            created_at=datetime.now(),
+            updated_at=datetime.now(),
+        )

@@ -30,6 +30,9 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={roboto.variable}>
+      <head>
+        <title>Agents</title>
+      </head>
       <body className="w-screen h-screen">
         <AuthContext.Provider value={authContext}>
           <AppRouterCacheProvider>

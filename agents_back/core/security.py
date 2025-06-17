@@ -36,9 +36,20 @@ def verify_access_token(token: str, credentials_exception: HTTPException):
         if username is None:
             raise credentials_exception # Token has no subject
         token_data = TokenData(sub=username)
+        return token_data
     except JWTError:
         raise credentials_exception # JWT decoding/validation failed
-    return token_data
+
+def verify_access_token_noexcept(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        token_data = TokenData(sub=username)
+        return token_data
+    except JWTError:
+        return None
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)

@@ -13,7 +13,7 @@ from agents_back.core.security import (
     create_access_token,
     TokenData,
     ACCESS_TOKEN_EXPIRE_MINUTES,
-    Token
+    Token, verify_access_token_noexcept
 )
 from agents_back.types.auth import RegisterDTO
 
@@ -78,6 +78,21 @@ class AuthService:
         user = await self.db["users"].find_one({"normalizedEmail": token_data.sub.upper()})
         if user is None:
             raise credentials_exception # User not found in DB or token subject is invalid
+        return user
+
+    async def get_current_user_noexcept(
+        self,
+        request: Request
+    ) -> User|None:
+        token = request.cookies.get('auth_token')
+        try:
+            token_data: TokenData = verify_access_token_noexcept(token)
+            if token_data.sub is None:
+                return None
+        except Exception:
+            return None
+
+        user = await self.db["users"].find_one({"normalizedEmail": token_data.sub.upper()})
         return user
 
 # Helper dependency to get an AuthService instance

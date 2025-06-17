@@ -6,6 +6,9 @@ from agents_back.db import get_db
 from agents_back.models.chat import Chat
 from motor import MotorCollection, MotorDatabase
 
+from agents_back.types.general import ObjectId
+
+
 class ChatService:
 
     def __init__(self, db: MotorDatabase):
@@ -21,6 +24,10 @@ class ChatService:
         result = await self.db['chats'].insert_one(empty_chat)
         empty_chat["id"] = result.inserted_id
         return Chat(**empty_chat)
+
+    async def get_chat(self, chat_id: ObjectId) -> Chat|None:
+        return await self.db['chats'].find_one({"_id": chat_id})
+
 
 def get_chat_service(db = Depends(get_db)):
     return ChatService(db)
