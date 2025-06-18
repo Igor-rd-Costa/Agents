@@ -22,3 +22,7 @@ class ObjectId(BsonObjectId):
         if not ObjectId.is_valid(v):
             raise ValueError("Invalid ObjectId")
         return ObjectId(v)
+
+    @staticmethod
+    def generate():
+        return BsonObjectId()

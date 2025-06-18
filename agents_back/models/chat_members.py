@@ -1,17 +1,12 @@
 from pydantic import BaseModel, Field
 from typing import Optional
+from bson import ObjectId
+from agents_back.types.chat import ChatMember
 
-from agents_back.models.chat_members import ChatMembers
-from agents_back.types.general import ObjectId
-from datetime import datetime
-
-class Chat(BaseModel):
+class ChatMembers(BaseModel):
     id: Optional[ObjectId] = Field(default_factory=ObjectId, alias="_id")
-    user_id: ObjectId
-    members_id: Optional[ObjectId]
-    name: str
-    created_at: datetime
-    updated_at: datetime
+    chat_id: ObjectId
+    members: list[ChatMember]
 
     model_config = {
         "populate_by_name": True,

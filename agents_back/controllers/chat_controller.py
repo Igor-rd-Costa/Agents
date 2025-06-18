@@ -18,9 +18,8 @@ async def chat(chat: ChatDTO, request: Request,
                auth_service: AuthService = Depends(get_auth_service)):
     if len(chat.message) is 0:
         raise HTTPException(status_code=400)
-    user = await auth_service.get_current_user_noexcept(request)
-
-    active_chat =  Chat.empty(user) if chat.id is None else await chat_service.get_chat(chat.id)
+    user = await auth_service.get_current_user(request)
+    active_chat =  chat_service.create_empty_chat(user.id) if chat.id is None else await chat_service.get_chat(chat.id)
 
     if active_chat.id is None:
         print("Using Empty Chat")
@@ -39,6 +38,11 @@ async def chat(chat: ChatDTO, request: Request,
     llm = ChatGroq(model="llama-3.3-70b-versatile")
     chain = template | llm
 
-    print("Hereeeee")
-    return stream_llm_response(chain)
+    tokens = []
+    async for chunk in chain.astream({}):
+        if chunk.content:
+            tokens.append(chunk.content)
+
+    print(f"Response:\n{''.join(tokens)}")
+    return stream_llm_response(tokens)
     

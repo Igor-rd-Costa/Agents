@@ -44,7 +44,10 @@ class AuthService:
         return User(**db_user)
 
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        user = User(**await self.db["users"].find_one({"normalizedEmail": email.upper()}))
+        user = await self.db["users"].find_one({"normalizedEmail": email.upper()})
+        print(f"got User: {user}")
+        user_obj = User(**user)
+        print(f"got User Object: {user_obj}")
 
         if not user or not verify_password(password, user.password):
             return None
