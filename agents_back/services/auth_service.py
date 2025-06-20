@@ -44,10 +44,8 @@ class AuthService:
         return User(**db_user)
 
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        user = await self.db["users"].find_one({"normalizedEmail": email.upper()})
-        print(f"got User: {user}")
-        user_obj = User(**user)
-        print(f"got User Object: {user_obj}")
+        user_dict = await self.db["users"].find_one({"normalizedEmail": email.upper()})
+        user = user_dict if user_dict is None else User(**user_dict)
 
         if not user or not verify_password(password, user.password):
             return None
@@ -81,7 +79,7 @@ class AuthService:
         user = await self.db["users"].find_one({"normalizedEmail": token_data.sub.upper()})
         if user is None:
             raise credentials_exception # User not found in DB or token subject is invalid
-        return user
+        return User(**user)
 
     async def get_current_user_noexcept(
         self,

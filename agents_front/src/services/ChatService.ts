@@ -14,8 +14,8 @@ export class ChatService {
         };
     }
 
-    public sendMessage(chatId: string|null, message: string): StreamingResponse {
-        return new StreamingResponse(this.backend, 'POST', JSON.stringify({id: chatId, message}));
+    public sendMessage(chatId: string|null, message: string): StreamingResponse<Chat> {
+        return new StreamingResponse<Chat>(this.backend, 'POST', JSON.stringify({id: chatId, message}));
     }
 }
 

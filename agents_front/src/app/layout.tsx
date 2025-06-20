@@ -8,6 +8,9 @@ import AuthContext, {AuthContextType} from "@/contexes/authContext";
 import { useState } from "react";
 import {User} from "@/types/auth";
 import {authService} from "@/services/AuthService";
+import ChatContext, {ChatContextType} from "@/contexes/chatContext";
+import chatService from "@/services/ChatService";
+import {Chat} from "@/types/chat";
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -22,11 +25,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [ user, setUser ] = useState<User|null>(null);
+  const [ chat, setChat ] = useState<Chat|null>(null);
   const authContext: AuthContextType = {
     user,
     setUser,
     authService
   };
+
+  const chatContext: ChatContextType = {
+    chat,
+    setChat,
+    chatService
+  }
+
 
   return (
     <html lang="en" className={roboto.variable}>
@@ -34,13 +45,15 @@ export default function RootLayout({
         <title>Agents</title>
       </head>
       <body className="w-screen h-screen">
-        <AuthContext.Provider value={authContext}>
+      <AuthContext.Provider value={authContext}>
+        <ChatContext.Provider value={chatContext}>
           <AppRouterCacheProvider>
             <ThemeProvider theme={theme}>
               {children}
             </ThemeProvider>
           </AppRouterCacheProvider>
-        </AuthContext.Provider>
+        </ChatContext.Provider>
+      </AuthContext.Provider>
       </body>
     </html>
   );

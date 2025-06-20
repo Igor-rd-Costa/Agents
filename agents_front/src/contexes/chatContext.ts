@@ -1,15 +1,17 @@
 import {createContext} from "react";
 import {Chat} from "@/types/chat";
-import chatService from "@/services/ChatService";
+import chatService, {ChatService} from "@/services/ChatService";
 
 export type ChatContextType = {
-    chat: Chat,
-    setChat: (chat: Chat|null) => void
+    chat: Chat|null,
+    setChat: (chat: Chat|null) => void,
+    chatService: ChatService
 }
 
 const ChatContext = createContext<ChatContextType>({
     chat: chatService.emptyChat(),
-    setChat: () => {}
+    setChat: () => {},
+    chatService
 });
 
 export default ChatContext;

@@ -3,12 +3,19 @@ import HttpMethod = Dispatcher.HttpMethod;
 
 export type StreamingResponseDataCallback = (data: string) => void;
 export type StreamingResponseErrorCallback = (error: any) => void;
-export type StreamingResponseFinishCallback = () => void;
+export type StreamingResponseFinishCallback<T> = (extraData: T|null) => void;
 
-export class StreamingResponse {
+const MESSAGE_TYPE_STRINGS =  {
+    data: "data: ",
+    event: "event: ",
+    extra: "extra: "
+};
+
+export class StreamingResponse<T = string> {
     private onDataCallback: StreamingResponseDataCallback = () => {}
     private onErrorCallback: StreamingResponseErrorCallback = () => {}
-    private onFinishCallback: StreamingResponseFinishCallback = () => {}
+    private onFinishCallback: StreamingResponseFinishCallback<T> = () => {}
+    private extraData: T|null = null;
     private error: string|null = null;
 
     public constructor(path: string, method: HttpMethod, body?: any) {
@@ -18,7 +25,8 @@ export class StreamingResponse {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body
+                body,
+                credentials: "include"
             });
             const reader = response.body?.getReader();
                 const decoder = new TextDecoder("utf-8");
@@ -37,12 +45,15 @@ export class StreamingResponse {
                     const chunks = decoder.decode(value)
                         .split("\n\n")
                         .filter(c => c !== "")
-                        .flatMap(this.getChucks);
+                        .flatMap(this.getChucks.bind(this));
 
                     for (let i = 0; i < chunks.length; i++) {
                         const chunk = chunks[i];
                         if (chunk.data) {
                             this.onDataCallback(chunk.data);
+                        }
+                        if (chunk.extra) {
+                            this.extraData = (JSON.parse(chunk.extra) as {extra: T}).extra;
                         }
                         if (chunk.event && chunk.event === "end") {
                             break;
@@ -54,8 +65,23 @@ export class StreamingResponse {
             if (this.error) {
                 this.onErrorCallback(this.error);
             }
-            this.onFinishCallback();
+            this.onFinishCallback(this.extraData);
         });
+    }
+
+    private getChucks(c: string) {
+        const parts = c.split('\n');
+        const values = [];
+        for (let i = 0; i < parts.length; i++) {
+            if (parts[i].startsWith(MESSAGE_TYPE_STRINGS.data)) {
+                values.push({data: parts[i].substring(MESSAGE_TYPE_STRINGS.data.length)});
+            } else if (parts[i].startsWith(MESSAGE_TYPE_STRINGS.event)) {
+                values.push({event: parts[i].substring(MESSAGE_TYPE_STRINGS.event.length)});
+            } else if (parts[i].startsWith(MESSAGE_TYPE_STRINGS.extra)) {
+                values.push({extra: parts[i].substring(MESSAGE_TYPE_STRINGS.extra.length)})
+            }
+        }
+        return values;
     }
 
     public onData(callback: StreamingResponseDataCallback) {
@@ -66,24 +92,7 @@ export class StreamingResponse {
         this.onErrorCallback = callback;
     }
 
-    public onFinish(callback: StreamingResponseFinishCallback) {
+    public onFinish(callback: StreamingResponseFinishCallback<T>) {
         this.onFinishCallback = callback;
-    }
-
-    private readonly dataStr = "data: ";
-    private readonly eventStr = "event: ";
-
-    private getChucks(c: string) {
-        const parts = c.split('\n');
-        const values = [];
-        for (let i = 0; i < parts.length; i++) {
-            if (parts[i].startsWith(this.dataStr)) {
-                values.push({data: parts[i].substring(this.dataStr.length)});
-            }
-            if (parts[i].startsWith(this.eventStr)) {
-                values.push({event: parts[i].substring(this.eventStr.length)});
-            }
-        }
-        return values;
     }
 }

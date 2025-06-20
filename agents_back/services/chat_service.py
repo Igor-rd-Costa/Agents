@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 
 from fastapi import Depends
 
@@ -22,22 +22,24 @@ class ChatService:
             "user_id": user_id,
             "members_id": members.id,
             "name": "Nova Conversa",
-            "created_at": datetime.datetime.now(),
-            "updated_at": datetime.datetime.now(),
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
         }
-        result = await self.db['chats'].insert_one(empty_chat)
+        result = await self.db["chats"].insert_one(empty_chat)
         empty_chat["id"] = result.inserted_id
-
         return Chat(**empty_chat)
 
     async def get_chat(self, chat_id: ObjectId) -> Chat|None:
-        return await self.db['chats'].find_one({"_id": chat_id})
+        chat = await self.db["chats"].find_one({"_id": chat_id})
+        return chat if chat is None else Chat(**chat)
 
     async def create_chat_members(self, chat_id: ObjectId, user_id: ObjectId):
         members = {
             "chat_id": chat_id,
-            "members": [ChatMember(id=user_id)]
+            "members": [ChatMember(id=user_id).model_dump()]
         }
+        result = await self.db["chat_members"].insert_one(members)
+        members["_id"] = result.inserted_id
         return ChatMembers(**members)
 
 
