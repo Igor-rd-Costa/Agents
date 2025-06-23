@@ -25,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [ user, setUser ] = useState<User|null>(null);
-  const [ chat, setChat ] = useState<Chat|null>(null);
+  const [ chat, setChat ] = useState<Chat>(chatService.emptyChat());
   const authContext: AuthContextType = {
     user,
     setUser,

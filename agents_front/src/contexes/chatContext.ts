@@ -3,8 +3,8 @@ import {Chat} from "@/types/chat";
 import chatService, {ChatService} from "@/services/ChatService";
 
 export type ChatContextType = {
-    chat: Chat|null,
-    setChat: (chat: Chat|null) => void,
+    chat: Chat,
+    setChat: (chat: Chat) => void,
     chatService: ChatService
 }
 

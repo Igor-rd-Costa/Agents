@@ -1,9 +1,11 @@
+import asyncio
 from datetime import datetime
 
 from fastapi import Depends
 
 from agents_back.db import get_db
 from agents_back.models.chat import Chat, ChatMembers
+from agents_back.models.chat_messages import ChatMessages
 from agents_back.types.chat import ChatMember
 
 from agents_back.types.general import ObjectId
@@ -18,20 +20,41 @@ class ChatService:
         chat_id = ObjectId.generate()
         members = await self.create_chat_members(chat_id, user_id)
         empty_chat = {
-            "chat_id": chat_id,
+            "_id": chat_id,
             "user_id": user_id,
             "members_id": members.id,
             "name": "Nova Conversa",
             "created_at": datetime.now(),
             "updated_at": datetime.now(),
         }
-        result = await self.db["chats"].insert_one(empty_chat)
-        empty_chat["id"] = result.inserted_id
+        await asyncio.gather(
+            self.db["chats"].insert_one(empty_chat),
+            self.create_chat_messages(chat_id)
+        )
         return Chat(**empty_chat)
 
-    async def get_chat(self, chat_id: ObjectId) -> Chat|None:
-        chat = await self.db["chats"].find_one({"_id": chat_id})
+    async def get_chat(self, chat_id: ObjectId, user_id: ObjectId) -> Chat|None:
+        chat = await self.db["chats"].find_one({"_id": chat_id, "user_id": user_id})
         return chat if chat is None else Chat(**chat)
+
+    async def get_chats(self, user_id: ObjectId):
+        chats = await self.db["chats"].find({"user_id": user_id}).to_list()
+        return list(map(lambda c: Chat(**c), chats))
+
+    async def get_messages(self, chat_id: ObjectId, user_id: ObjectId):
+        messages = await self.db["chat_messages"].find_one({"chat_id": chat_id, "user_id": user_id})
+        return [] if messages is None else ChatMessages(**messages)
+
+    async def save_messages(self, chat_id: ObjectId, messages: list[tuple[str, str]]):
+        print(f"Saving messages: {messages}")
+        await self.db["chat_messages"].update_one(
+            {"chat_id": chat_id},
+            {"$push": {
+                "messages": {
+                    "$each": messages
+                }
+            }}
+        )
 
     async def create_chat_members(self, chat_id: ObjectId, user_id: ObjectId):
         members = {
@@ -41,6 +64,15 @@ class ChatService:
         result = await self.db["chat_members"].insert_one(members)
         members["_id"] = result.inserted_id
         return ChatMembers(**members)
+
+    async def create_chat_messages(self, chat_id: ObjectId):
+        chat_messages = {
+            "chat_id": chat_id,
+            "messages": []
+        }
+        result = await self.db["chat_messages"].insert_one(chat_messages)
+        chat_messages["_id"] = result.inserted_id
+        return ChatMessages(**chat_messages)
 
 
 def get_chat_service(db = Depends(get_db)):

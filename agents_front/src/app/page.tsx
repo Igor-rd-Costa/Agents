@@ -12,7 +12,7 @@ type MessageDTO = {
 }
 
 export default function Home() {
-    const {chat, setChat} = useContext(ChatContext);
+    const {chat, setChat, chatService} = useContext(ChatContext);
     const [message, setMessage] = useState("");
     const [endToggle, setEndToggle] = useState(false);
     const [messages, setMessages] = useState<MessageDTO[]>([]);
@@ -25,6 +25,21 @@ export default function Home() {
             setMessage("");
         }
     }, [endToggle]);
+
+    useEffect(() => {
+        console.log("Chat changed", chat)
+        if (chat.id) {
+        console.log("Here", chat.id);
+            new Promise<void>(async (resolve) => {
+               const {data, status} = await chatService.getMessages(chat.id!);
+               console.log("Got messages", data, status);
+               resolve();
+            }).then(() => {});
+        } else {
+            setMessages([]);
+            setMessage("");
+        }
+    }, [chat]);
 
     const onSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -57,6 +72,7 @@ export default function Home() {
         })
         result.onFinish(c => {
             if (c) {
+                c.id = ((c as unknown) as any)["_id"];
                 setChat(c);
             }
             setEndToggle(!endToggle);
