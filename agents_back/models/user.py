@@ -5,7 +5,7 @@ from agents_back.types.general import ObjectId
 
 
 class User(BaseModel):
-    id: Optional[ObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: Optional[ObjectId] = Field(default_factory=ObjectId)
     username: str
     email: str
     normalizedEmail: str

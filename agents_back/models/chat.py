@@ -6,7 +6,7 @@ from agents_back.types.general import ObjectId
 from datetime import datetime
 
 class Chat(BaseModel):
-    id: Optional[ObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: Optional[ObjectId] = Field(default_factory=ObjectId)
     user_id: ObjectId
     members_id: Optional[ObjectId]
     name: str
@@ -18,5 +18,6 @@ class Chat(BaseModel):
         "arbitrary_types_allowed": True,
         "json_encoders": {
             ObjectId: str
-        }
+        },
+        "by_alias": False
     }

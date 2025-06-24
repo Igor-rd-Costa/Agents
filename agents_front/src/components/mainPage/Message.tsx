@@ -2,10 +2,10 @@ import SmartToy from "@mui/icons-material/SmartToy"
 import Person from "@mui/icons-material/Person"
 import {CSSProperties} from "react";
 
-export type MessageIcon = 'agent' | 'user'
+export type MessageType = 'agent' | 'user'
 
 export type MessageProps = {
-    icon: MessageIcon,
+    icon: MessageType,
     content: string
 }
 

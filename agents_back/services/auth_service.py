@@ -16,6 +16,7 @@ from agents_back.core.security import (
     Token, verify_access_token_noexcept
 )
 from agents_back.types.auth import RegisterDTO
+from agents_back.utils.mongodb import mongo_document_to_type
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login") # Adjust tokenUrl to your actual login endpoint
 
@@ -45,7 +46,7 @@ class AuthService:
 
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
         user_dict = await self.db["users"].find_one({"normalizedEmail": email.upper()})
-        user = user_dict if user_dict is None else User(**user_dict)
+        user = user_dict if user_dict is None else mongo_document_to_type(user_dict, User)
 
         if not user or not verify_password(password, user.password):
             return None
@@ -79,7 +80,7 @@ class AuthService:
         user = await self.db["users"].find_one({"normalizedEmail": token_data.sub.upper()})
         if user is None:
             raise credentials_exception # User not found in DB or token subject is invalid
-        return User(**user)
+        return mongo_document_to_type(user, User)
 
     async def get_current_user_noexcept(
         self,

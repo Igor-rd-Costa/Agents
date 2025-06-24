@@ -6,7 +6,7 @@ from agents_back.types.general import ObjectId
 
 
 class ChatMessages(BaseModel):
-    id: Optional[ObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: Optional[ObjectId] = Field(default_factory=ObjectId)
     chat_id: ObjectId
     messages: list[Message]
 

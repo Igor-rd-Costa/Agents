@@ -4,7 +4,7 @@ from bson import ObjectId
 from agents_back.types.chat import ChatMember
 
 class ChatMembers(BaseModel):
-    id: Optional[ObjectId] = Field(default_factory=ObjectId, alias="_id")
+    id: Optional[ObjectId] = Field(default_factory=ObjectId)
     chat_id: ObjectId
     members: list[ChatMember]
 

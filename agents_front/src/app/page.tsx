@@ -1,13 +1,12 @@
 'use client'
 import Button from "@mui/material/Button";
-import Message, {MessageIcon} from "../components/mainPage/Message"
+import Message, {MessageType} from "../components/mainPage/Message"
 import React, {useContext, useEffect, useRef, useState} from "react";
 import ChatsSection from "@/components/mainPage/ChatsSection";
 import ChatContext from "@/contexes/chatContext";
-import chatService from "@/services/ChatService";
 
 type MessageDTO = {
-    src: MessageIcon,
+    type: MessageType,
     content: string
 }
 
@@ -21,18 +20,16 @@ export default function Home() {
 
     useEffect(() => {
         if (message !== "") {
-            setMessages(m => [...m, {src: 'agent', content: message}]);
+            setMessages(m => [...m, {type: 'agent', content: message}]);
             setMessage("");
         }
     }, [endToggle]);
 
     useEffect(() => {
-        console.log("Chat changed", chat)
         if (chat.id) {
-        console.log("Here", chat.id);
             new Promise<void>(async (resolve) => {
-               const {data, status} = await chatService.getMessages(chat.id!);
-               console.log("Got messages", data, status);
+               const data = await chatService.getMessages(chat.id!);
+               setMessages(data.messages);
                resolve();
             }).then(() => {});
         } else {
@@ -52,7 +49,7 @@ export default function Home() {
         }
 
         setMessage("");
-        setMessages(m => [...m, {src: 'user', content: value}]);
+        setMessages(m => [...m, {type: 'user', content: value}]);
         setTimeout(() => {
             if (messagesWrapper.current) {
                 messagesWrapper.current.scrollTo(0, messagesWrapper.current.scrollHeight);
@@ -72,7 +69,6 @@ export default function Home() {
         })
         result.onFinish(c => {
             if (c) {
-                c.id = ((c as unknown) as any)["_id"];
                 setChat(c);
             }
             setEndToggle(!endToggle);
@@ -85,7 +81,7 @@ export default function Home() {
             <div className="w-full h-full overflow-y-hidden grid grid-rows-[1fr_auto] p-4 justify-items-center pt-0 pr-8 gap-8">
                 <div ref={messagesWrapper} className="overflow-y-scroll gap-y-4 flex flex-col w-[90%] p-2 pt-8">
                     {messages.map((m, i) =>
-                        <Message key={i} icon={m.src} content={m.content}/>
+                        <Message key={i} icon={m.type} content={m.content}/>
                     )}
                     {message !== "" ? <Message icon="agent" content={message}/> : <></>}
                 </div>

@@ -20,14 +20,12 @@ export class ChatService {
     }
 
     public async getChats(): Promise<Chat[]> {
-        const {data, status} = await axios.get(`${this.backend}`, {withCredentials: true});
+        const {data} = await axios.get(`${this.backend}`, {withCredentials: true});
         return data;
     }
 
     public async getMessages(chatId: string) {
-        console.log("Getting messages for", chatId);
-        const {data, status} = await axios.get(`${this.backend}/${chatId}/messages`, {withCredentials: true});
-        console.log("Here", data, status);
+        const {data} = await axios.get(`${this.backend}/${chatId}/messages`, {withCredentials: true});
         return data;
     }
 }
