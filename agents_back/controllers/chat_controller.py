@@ -6,7 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from agents_back.services.auth_service import AuthService, get_auth_service
 from agents_back.services.chat_service import ChatService, get_chat_service
-from agents_back.types.chat import ChatDTO, Message
+from agents_back.types.chat import ChatDTO, Message, DeleteChatDTO
 from agents_back.types.general import ObjectId
 from agents_back.utils.agents import chat_messages_to_agent_message
 from agents_back.utils.responses import stream_llm_response
@@ -70,6 +70,16 @@ async def get_chats(
     user = await auth_service.get_current_user(request)
     chats = await chat_service.get_chats(user.id) if chat_id is None else await chat_service.get_chat(chat_id, user.id)
     return chats
+
+@router.delete("")
+async def delete_chat(
+        dto: DeleteChatDTO,
+        request: Request,
+        auth_service: AuthService = Depends(get_auth_service),
+        chat_service: ChatService = Depends(get_chat_service)
+):
+    user = await auth_service.get_current_user(request)
+    return await chat_service.delete_chat(dto.id, user.id)
 
 @router.get("/{chat_id}/messages")
 async def get_messages(

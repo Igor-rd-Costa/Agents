@@ -28,6 +28,11 @@ export class ChatService {
         const {data} = await axios.get(`${this.backend}/${chatId}/messages`, {withCredentials: true});
         return data;
     }
+
+    public async deleteChat(chatId: string) {
+        const {data} = await axios.delete(this.backend, {withCredentials: true, data: {id: chatId}});
+        return data;
+    }
 }
 
 const chatService = new ChatService();
