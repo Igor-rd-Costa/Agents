@@ -50,6 +50,7 @@ export default function Home() {
 
         setMessage("");
         setMessages(m => [...m, {type: 'user', content: value}]);
+        input.current.value = "";
         setTimeout(() => {
             if (messagesWrapper.current) {
                 messagesWrapper.current.scrollTo(0, messagesWrapper.current.scrollHeight);

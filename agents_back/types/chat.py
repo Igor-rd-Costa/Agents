@@ -13,3 +13,6 @@ class Message(BaseModel):
 class ChatDTO(BaseModel):
     id: ObjectId|None
     message: str
+
+class DeleteChatDTO(BaseModel):
+    id: ObjectId

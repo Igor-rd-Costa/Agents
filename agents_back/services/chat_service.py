@@ -38,9 +38,12 @@ class ChatService:
         return chat if chat is None else mongo_document_to_type(chat, Chat)
 
     async def get_chats(self, user_id: ObjectId):
-
         chats = await self.db["chats"].find({"user_id": user_id}).to_list()
         return list(map(lambda c: mongo_document_to_type(c, Chat), chats))
+
+    async def delete_chat(self, chat_id: ObjectId, user_id: ObjectId):
+        result = await self.db["chats"].delete_one({"_id": chat_id, "user_id": user_id})
+        return result.deleted_count > 0
 
     async def get_messages(self, chat_id: ObjectId):
         messages = await self.db["chat_messages"].find_one({"chat_id": chat_id})

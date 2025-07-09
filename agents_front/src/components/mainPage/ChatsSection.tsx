@@ -4,6 +4,7 @@ import {useContext, useEffect, useRef, useState} from "react";
 import ChatContext from "@/contexes/chatContext";
 import chatService from "@/services/ChatService";
 import ChatIcon from "@mui/icons-material/Chat";
+import DeleteIcon from "@mui/icons-material/Delete"
 import {Chat} from "@/types/chat";
 
 export default function ChatsSection() {
@@ -18,6 +19,13 @@ export default function ChatsSection() {
             setChats(c)
         });
     }, []);
+
+    useEffect(() => {
+        if (chatContext.chat.id !== null && chats.filter(c => c.id === chatContext.chat.id).length === 0) {
+            setChats([...chats, chatContext.chat]);
+        }
+    }, [chatContext.chat]);
+
     const newChat = () => {
         chatContext.setChat(chatService.emptyChat());
     }
@@ -45,6 +53,20 @@ export default function ChatsSection() {
         });
     }
 
+    const deleteChat = async (chat: Chat) => {
+        if (!chat.id) {
+            return false;
+        }
+        if (await chatContext.chatService.deleteChat(chat.id)) {
+            setChats(chats.filter(c => c.id !== chat.id));
+            if (chatContext.chat.id === chat.id) {
+                chatContext.setChat(chatService.emptyChat());
+            }
+            return true;
+        }
+        return false;
+    }
+
     return (
         <section ref={section} className="h-full w-[256px] bg-[#151515] p-3 pt-4">
             <div>
@@ -65,7 +87,12 @@ export default function ChatsSection() {
                             cursor-pointer flex items-center gap-x-2" onClick={() => {
                                 chatContext.setChat(c)
                             }}>
-                                <ChatIcon fontSize="small"/> {c.name}
+                                <ChatIcon fontSize="small"/>
+                                <span className="w-full flex">{c.name}</span>
+                                <DeleteIcon onClick={async (e: React.MouseEvent) => {
+                                    e.stopPropagation();
+                                    await deleteChat(c);
+                                }} className="text-[#DDD] hover:text-[#FFF]"/>
                             </button>
                         ))}
                     </div>
