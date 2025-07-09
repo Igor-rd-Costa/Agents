@@ -11,6 +11,8 @@ import {authService} from "@/services/AuthService";
 import ChatContext, {ChatContextType} from "@/contexes/chatContext";
 import chatService from "@/services/ChatService";
 import {Chat} from "@/types/chat";
+import mcpService from "@/services/MCPService";
+import MCPContext, {MCPContextType} from "@/contexes/mcpContext";
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -26,6 +28,8 @@ export default function RootLayout({
 }>) {
   const [ user, setUser ] = useState<User|null>(null);
   const [ chat, setChat ] = useState<Chat>(chatService.emptyChat());
+  const [ mcp, setMcp ] = useState<any>({});
+
   const authContext: AuthContextType = {
     user,
     setUser,
@@ -38,6 +42,12 @@ export default function RootLayout({
     chatService
   }
 
+  const mcpContext: MCPContextType = {
+    mcp,
+    setMcp,
+    mcpService
+  }
+
 
   return (
     <html lang="en" className={roboto.variable}>
@@ -46,13 +56,15 @@ export default function RootLayout({
       </head>
       <body className="w-screen h-screen">
       <AuthContext.Provider value={authContext}>
-        <ChatContext.Provider value={chatContext}>
-          <AppRouterCacheProvider>
-            <ThemeProvider theme={theme}>
-              {children}
-            </ThemeProvider>
-          </AppRouterCacheProvider>
-        </ChatContext.Provider>
+        <MCPContext.Provider value={mcpContext}>
+          <ChatContext.Provider value={chatContext}>
+            <AppRouterCacheProvider>
+              <ThemeProvider theme={theme}>
+                {children}
+              </ThemeProvider>
+            </AppRouterCacheProvider>
+          </ChatContext.Provider>
+        </MCPContext.Provider>
       </AuthContext.Provider>
       </body>
     </html>
