@@ -22,10 +22,12 @@ export default function Page() {
         e.preventDefault();
         const email = emailInput.current?.value ?? null;
         const password = passwordInput.current?.value ?? null;
+
         if (!email || !password) {
             return;
         }
-        const u = await authService.Login({email, password});
+
+        const u = await authService.login({email, password});
         if (u) {
             setUser(u);
             router.push("/");

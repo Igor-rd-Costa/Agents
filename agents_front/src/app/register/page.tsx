@@ -27,7 +27,7 @@ export default function Page() {
         if (!username || !email || !password) {
             return;
         }
-        const u = await authService.Register({username, email, password});
+        const u = await authService.register({username, email, password});
         if (u) {
             setUser(u);
             router.push("/");

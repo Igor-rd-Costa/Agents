@@ -2,8 +2,8 @@
 import Button from "@mui/material/Button";
 import Message, {MessageType} from "../components/mainPage/Message"
 import React, {useContext, useEffect, useRef, useState} from "react";
-import ChatsSection from "@/components/mainPage/ChatsSection";
 import ChatContext from "@/contexes/chatContext";
+import PageLayout from "@/components/layouts/pageLayout/PageLayout";
 
 type MessageDTO = {
     type: MessageType,
@@ -77,9 +77,8 @@ export default function Home() {
     }
 
     return (
-        <div className="grid w-screen h-screen grid-cols-[auto_1fr]">
-            <ChatsSection/>
-            <div className="w-full h-full overflow-y-hidden grid grid-rows-[1fr_auto] p-4 justify-items-center pt-0 pr-8 gap-8">
+        <PageLayout>
+            <>
                 <div ref={messagesWrapper} className="overflow-y-scroll gap-y-4 flex flex-col w-[90%] p-2 pt-8">
                     {messages.map((m, i) =>
                         <Message key={i} icon={m.type} content={m.content}/>
@@ -91,7 +90,7 @@ export default function Home() {
                     </textarea>
                     <Button type="submit" variant={'contained'}>Send</Button>
                 </form>
-            </div>
-        </div>
+            </>
+        </PageLayout>
     );
 }

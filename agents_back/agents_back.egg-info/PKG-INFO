@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: agents-back
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.116.0
+Requires-Dist: langchain-core>=0.3.68
+Requires-Dist: langchain-groq>=0.3.5
+Requires-Dist: langchain-huggingface>=0.3.0
+Requires-Dist: langchain-mongodb>=0.6.2
+Requires-Dist: mcp[cli]>=1.11.0
+Requires-Dist: motor>=3.7.1
+Requires-Dist: passlib>=1.7.4
+Requires-Dist: pymongo[srv]>=4.13.2
+Requires-Dist: python-dotenv>=1.1.1
+Requires-Dist: python-jose>=3.5.0
+Requires-Dist: setuptools>=80.9.0

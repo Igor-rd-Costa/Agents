@@ -1,14 +1,14 @@
-from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+load_dotenv()
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import importlib
 import pkgutil
-from dotenv import load_dotenv
 
 from agents_back.services.mcp_service import MCPService
 
-load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
