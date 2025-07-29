@@ -4,6 +4,7 @@ Version: 0.1.0
 Summary: Add your description here
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
+Requires-Dist: bcrypt>=4.3.0
 Requires-Dist: fastapi>=0.116.0
 Requires-Dist: langchain-core>=0.3.68
 Requires-Dist: langchain-groq>=0.3.5
@@ -16,3 +17,4 @@ Requires-Dist: pymongo[srv]>=4.13.2
 Requires-Dist: python-dotenv>=1.1.1
 Requires-Dist: python-jose>=3.5.0
 Requires-Dist: setuptools>=80.9.0
+Requires-Dist: xmltodict>=0.14.2

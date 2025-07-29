@@ -1,13 +1,13 @@
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import {useContext, useState} from "react";
-import ChatContext from "@/contexes/chatContext";
 import {Chat} from "@/types/chat";
 import chatService from "@/services/ChatService";
 import ChatIcon from "@mui/icons-material/Chat";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AppContext from "@/contexes/appContext";
 
 export function TalksChildren() {
-    const chatContext = useContext(ChatContext)
+    const { chatContext } = useContext(AppContext)
     const [chats, setChats] = useState<Chat[]>([]);
 
     const newChat = () => {

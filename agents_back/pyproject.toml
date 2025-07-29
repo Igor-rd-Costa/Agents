@@ -9,6 +9,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "bcrypt>=4.3.0",
     "fastapi>=0.116.0",
     "langchain-core>=0.3.68",
     "langchain-groq>=0.3.5",
@@ -21,4 +22,5 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "python-jose>=3.5.0",
     "setuptools>=80.9.0",
+    "xmltodict>=0.14.2",
 ]

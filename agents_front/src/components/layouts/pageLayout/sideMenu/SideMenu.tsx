@@ -1,53 +1,89 @@
 'use client'
-import EditNoteIcon from "@mui/icons-material/EditNote"
-import Menu from "@mui/icons-material/Menu"
-import {useContext, useEffect, useRef, useState} from "react";
-import ChatContext from "@/contexes/chatContext";
+import React, {
+    forwardRef,
+    useCallback,
+    useContext,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState
+} from "react";
 import {Chat} from "@/types/chat";
-import SmartToyIcon from "@mui/icons-material/SmartToy"
 import PersonIcon from "@mui/icons-material/Person"
 import {usePathname} from "next/navigation";
-import {TalksChildren} from "@/components/layouts/pageLayout/sideMenu/children/TalksChildren";
-import AuthContext from "@/contexes/authContext";
+import ArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
+import ArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft"
+import NavBar, {
+    NavBarItemInfo,
+    NavBarRef,
+    NavBarView
+} from "@/components/layouts/pageLayout/sideMenu/components/NavBar";
+import ChatIcon from "@mui/icons-material/Chat";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import HardwareIcon from "@mui/icons-material/Hardware";
+import BrushIcon from "@mui/icons-material/Brush";
+import AppContext, {AppView} from "@/contexes/appContext";
 
-type MenuItemProps = {
-    icon: React.ReactNode,
-    label: string,
-    route: string,
-    selected?: boolean
+export type SideMenuRef = {
+    isExpanded: boolean,
+    toggleExpand: (view: AppView, expanded?: boolean) => void,
+    canvas: {
+        show: (svg: string) => void
+    }
 }
 
-type MenuItemInfo = MenuItemProps & {
-    children: React.ReactNode
-}
+export const sideMenuCanvasWidth = 384;
 
-const MenuItem = ({icon = <></>, label = "", route= "", selected = false}: MenuItemProps) => {
-    return (
-        <a href={route} className={`flex gap-x-2 ${selected ? 'text-white' : ''} hover:text-white cursor-pointer`}>
-            {icon} {label}
-        </a>
-    );
-}
-
-const menuItems: MenuItemInfo[] = [
-    {icon: <EditNoteIcon/>, label: "Conversas", route: '/', children: <TalksChildren/>},
-    {icon: <SmartToyIcon/>, label: "Agentes", route: '/agents', children: <></>},
-];
-
-export default function SideMenu() {
-    const chatContext = useContext(ChatContext);
-    const authContext = useContext(AuthContext);
-    const [chats, setChats] = useState<Chat[]>([]);
-    const isExpanded = useRef<boolean>(true);
-    const section = useRef<HTMLElement>(null);
-    const menuAnimation = useRef<Animation|null>(null);
+const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
     const pathName = usePathname();
 
+    const { authContext, chatContext, viewContext } = useContext(AppContext);
+
+    const sectionRef = useRef<HTMLElement>(null);
+    const menuAnimation = useRef<Animation|null>(null);
+    const navBarWrapperRef = useRef<HTMLDivElement>(null);
+    const navBarRef = useRef<NavBarRef>(null);
+    const expandButtonRef = useRef<HTMLButtonElement>(null);
+    const canvasDisplayRef = useRef<HTMLDivElement>(null);
+
+    const [chats, setChats] = useState<Chat[]>([]);
+    const [isExpanded, setIsExpanded] = useState<boolean>(true);
+    const [navBarView, setNavBarView] = useState<NavBarView>(isExpanded ? 'horz' : 'vert');
+    const [canvasDisplay, setCanvasDisplay] = useState<string|null>(null);
+
+    const navBarItems: NavBarItemInfo[] = useMemo(() => {
+        return [
+            {
+                title: 'Conversas',
+                icon: <ChatIcon/>,
+                view: AppView.CHATS
+            },
+            {
+                title: 'Canvas',
+                icon: <BrushIcon/>,
+                view: AppView.CANVAS
+            },
+            {
+                title: 'Agentes',
+                icon: <SmartToyIcon/>,
+                view: AppView.AGENTS
+            },
+            {
+                title: 'MCP',
+                icon: <HardwareIcon/>,
+                view: AppView.MCP
+            },
+        ];
+    }, [viewContext.view]);
+
     useEffect(() => {
-        chatContext.chatService.getChats().then(c => {
-            setChats(c)
-        });
-    }, []);
+        if (pathName === '/') {
+            chatContext.chatService.getChats().then(c => {
+                setChats(c)
+            });
+        }
+    }, [navBarItems]);
 
     useEffect(() => {
         if (chatContext.chat.id !== null && chats.filter(c => c.id === chatContext.chat.id).length === 0) {
@@ -55,67 +91,152 @@ export default function SideMenu() {
         }
     }, [chatContext.chat]);
 
-    const toggleExpand = () => {
-        if (!section.current) {
+    useEffect(() => {
+        if (isExpanded && canvasDisplay && viewContext.view === AppView.CANVAS && canvasDisplayRef.current) {
+            canvasDisplayRef.current.style.display = 'block';
+            canvasDisplayRef.current.innerHTML = canvasDisplay;
+        } else if (canvasDisplayRef.current) {
+            canvasDisplayRef.current.style.display = 'none';
+        }
+    }, [isExpanded, canvasDisplay, viewContext.view]);
+
+    const toggleExpand = useCallback((view: AppView, expanded: boolean|undefined = undefined) => {
+        if (!sectionRef.current || !sectionRef.current.firstElementChild || !navBarWrapperRef.current) {
             return;
         }
 
-        const currentWidth = section.current.getBoundingClientRect().width;
-        const newWidth = isExpanded.current ? 48 : 256;
+        expanded = (expanded === undefined) ? !isExpanded : expanded;
+        const expansionChange = expanded !== isExpanded;
+        const viewChange = view !== viewContext.view;
+
+        if (!expansionChange && !viewChange) {
+            return;
+        }
+
+        const wrapper = sectionRef.current.firstElementChild;
+        const animationTiming = 150;
+        const newWidth = expanded
+            ? view === AppView.CANVAS ? sideMenuCanvasWidth : 256
+            : 48;
+
         if (menuAnimation.current) {
             menuAnimation.current.cancel();
         }
 
-        isExpanded.current = !isExpanded.current;
-        menuAnimation.current = section.current.animate(
+        setIsExpanded(expanded)
+        sessionStorage.setItem('side-menu-isExpanded', String(expanded));
+
+        if (expansionChange) {
+            navBarRef.current?.hide(animationTiming);
+        }
+
+        const wrapperShouldRetract =
+            (view === AppView.CANVAS && !expanded)
+            || (viewContext.view === AppView.CANVAS && view !== AppView.CANVAS);
+        const wrapperChange =
+            wrapperShouldRetract
+            || (viewContext.view !== AppView.CANVAS && view === AppView.CANVAS);
+
+        if (wrapperChange) {
+            const section = sectionRef.current;
+            const currentSectionWidth = section.getBoundingClientRect().width;
+            const newWrapperWidth = wrapperShouldRetract ? 48 : newWidth;
+            if (currentSectionWidth !== newWrapperWidth) {
+                section.animate([{width: `${currentSectionWidth}px`}, {width: `${newWrapperWidth}px`}], {duration: animationTiming * 2.3, fill: 'forwards'});
+            }
+        }
+
+        const currentWidth = wrapper.getBoundingClientRect().width;
+        menuAnimation.current = wrapper.animate(
             [{width: `${currentWidth}px`}, {width: `${newWidth}px`}],
-            {duration: 200, fill: 'forwards'}
+            {duration: animationTiming * 2.3, fill: 'forwards'}
         );
 
         menuAnimation.current.addEventListener('finish', () => {
-            menuAnimation.current?.commitStyles();
             menuAnimation.current = null;
+            if (expansionChange) {
+                setNavBarView(expanded ? 'horz' : 'vert');
+                navBarRef.current?.show(animationTiming);
+                if (expanded) {
+                    navBarWrapperRef.current!.style.display = 'flex';
+                    navBarWrapperRef.current!.style.gridTemplateRows = '48px';
+                } else {
+                    navBarWrapperRef.current!.style.display = 'grid';
+                    navBarWrapperRef.current!.style.gridTemplateRows = '48px 1fr';
+                }
+            }
         });
+    }, [isExpanded, viewContext.view]);
+
+    const canvasShow = (svg: string) => {
+        viewContext.setView(AppView.CANVAS);
+        toggleExpand(AppView.CANVAS, true);
+        setCanvasDisplay(svg);
     }
 
+    useImperativeHandle(ref, () => ({
+       isExpanded,
+       toggleExpand,
+        canvas: {
+            show: canvasShow
+        }
+    }));
+
+    const initialStyles = useMemo(() => {
+        return {
+            navBarWrapper: {
+                display: isExpanded ? 'flex' : 'grid',
+                gridTemplateRows: isExpanded ? '48px' : '48px 1fr'
+            }
+        };
+    }, []);
+
     return (
-        <section ref={section} className="h-full w-[256px] bg-[#151515] p-3 pt-4 font-mono">
-            <div className="h-fit w-full grid grid-cols-1 gap-y-12">
-                <div>
-                    <button type="button" className="hover:white cursor-pointer" onClick={toggleExpand}>
-                        <Menu/>
-                    </button>
-                </div>
-
-                <div>
-                    {authContext.user ?
-                        <button className="flex gap-x-2 items-center hover:text-white cursor-pointer">
-                            <div className="border rounded-full flex items-center align-center">
-                                <PersonIcon/>
-                            </div>
-                            {authContext.user.username}
+        <section ref={sectionRef} className="h-full w-[48px] overflow-x-visible z-[1] font-mono">
+            <div style={{width: isExpanded ? '256px' : '48px'}}  className="bg-[#151515] text-[#DDD] h-full">
+                <div className="h-fit w-full grid grid-cols-1 gap-y-12">
+                    <div style={initialStyles.navBarWrapper} ref={navBarWrapperRef} className="grid-cols-1">
+                        <div className="w-full overflow-x-hidden">
+                            <NavBar ref={navBarRef} view={navBarView} items={navBarItems} onNavigate={async (view) => {
+                                toggleExpand(view, true);
+                            }}/>
+                        </div>
+                        <button ref={expandButtonRef} type="button" className="flex items-center justify-center col-start-1 row-start-1
+                        justify-self-end
+                        hover:text-white cursor-pointer w-[48px] h-[48px]" onClick={() => toggleExpand(viewContext.view)}>
+                            {isExpanded
+                                ? <ArrowLeftIcon className="h-[24px] w-[24px]"/>
+                                : <ArrowRightIcon className="h-[24px] w-[24px]"/>
+                            }
                         </button>
-                        : <a href="/login" className="flex gap-x-2 items-center hover:text-white cursor-pointer">
-                            <div className="border rounded-full flex items-center align-center">
-                                <PersonIcon/>
-                            </div>
-                            Login
-                        </a>
-                    }
-                </div>
+                    </div>
 
-                <div className="grid gap-y-12 text-[#DDD] overflow-hidden text-nowrap">
-                    <div className="grid gap-y-2">
-                        {menuItems.map((item, index) =>
-                            <MenuItem key={index} icon={item.icon} label={item.label}
-                                      route={item.route} selected={pathName === item.route}/>
-                        )}
-                    </div>
-                    <div>
-                        {menuItems.filter(i => i.route === pathName)[0]?.children ?? <></>}
-                    </div>
+                    {isExpanded ?? (
+                        <>
+                            <div className="pl-2 pr-2">
+                            {authContext.user ?
+                                <button className="flex gap-x-2 items-center hover:text-white cursor-pointer">
+                                    <div className="border rounded-full flex items-center align-center">
+                                        <PersonIcon/>
+                                    </div>
+                                    {authContext.user.username}
+                                </button>
+                                : <a href="/login" className="flex gap-x-2 items-center hover:text-white cursor-pointer">
+                                    <div className="border rounded-full flex items-center align-center">
+                                        <PersonIcon/>
+                                    </div>
+                                    Login
+                                </a>
+                            }
+                            </div>
+                        </>
+                    )}
+                    <div ref={canvasDisplayRef} style={{width: `${sideMenuCanvasWidth}px`, height: `${sideMenuCanvasWidth}px`, display: 'none'}} className="p-4"></div>
                 </div>
             </div>
         </section>
     );
-}
+});
+SideMenu.displayName = "SideMenu";
+
+export default SideMenu;

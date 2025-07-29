@@ -1,11 +1,19 @@
-import React from "react";
-import SideMenu from "@/components/layouts/pageLayout/sideMenu/SideMenu";
+import React, {useContext, useEffect, useRef} from "react";
+import SideMenu, {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
+import AppContext from "@/contexes/appContext";
 
 export default function PageLayout({children}: React.PropsWithChildren) {
+    const { components } = useContext(AppContext);
+    const sideMenuRef = useRef<SideMenuRef>(null);
+
+    useEffect(() => {
+        components.setSideMenuRef(sideMenuRef);
+    }, []);
+
     return (
         <div className="grid w-screen h-screen grid-cols-[auto_1fr]">
-            <SideMenu/>
-            <div className="w-full h-full overflow-y-hidden grid grid-rows-[1fr_auto] p-4 justify-items-center pt-0 pr-8 gap-8">
+            <SideMenu ref={sideMenuRef}/>
+            <div className="w-full h-full">
                 {children}
             </div>
         </div>

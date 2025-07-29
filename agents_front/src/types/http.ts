@@ -1,14 +1,26 @@
 import {Dispatcher} from "undici-types";
 import HttpMethod = Dispatcher.HttpMethod;
 
+export type ToolCall = {
+    name: string,
+    namespace: string,
+    args: { [key: string]: any }
+}
+
+type StreamingResponseFinishCallbackArg<T> = {
+    extraData: T|null,
+    tool: ToolCall[]|null
+}
+
 export type StreamingResponseDataCallback = (data: string) => void;
 export type StreamingResponseErrorCallback = (error: any) => void;
-export type StreamingResponseFinishCallback<T> = (extraData: T|null) => void;
+export type StreamingResponseFinishCallback<T> = (arg: StreamingResponseFinishCallbackArg<T>) => void;
 
 const MESSAGE_TYPE_STRINGS =  {
     data: "data: ",
     event: "event: ",
-    extra: "extra: "
+    extra: "extra: ",
+    tool: "tool: "
 };
 
 export class StreamingResponse<T = string> {
@@ -16,6 +28,7 @@ export class StreamingResponse<T = string> {
     private onErrorCallback: StreamingResponseErrorCallback = () => {}
     private onFinishCallback: StreamingResponseFinishCallback<T> = () => {}
     private extraData: T|null = null;
+    private tool: ToolCall[]|null = null;
     private error: string|null = null;
 
     public constructor(path: string, method: HttpMethod, body?: any) {
@@ -38,11 +51,12 @@ export class StreamingResponse<T = string> {
 
                 while (true) {
                     const { value, done } = await reader!.read();
+                    const decodedVal = decoder.decode(value);
                     if (done) {
                         break;
                     }
 
-                    const chunks = decoder.decode(value)
+                    const chunks = decodedVal
                         .split("\n\n")
                         .filter(c => c !== "")
                         .flatMap(this.getChucks.bind(this));
@@ -55,6 +69,9 @@ export class StreamingResponse<T = string> {
                         if (chunk.extra) {
                             this.extraData = (JSON.parse(chunk.extra) as {extra: T}).extra;
                         }
+                        if (chunk.tool) {
+                            this.tool = JSON.parse(chunk.tool);
+                        }
                         if (chunk.event && chunk.event === "end") {
                             break;
                         }
@@ -65,7 +82,7 @@ export class StreamingResponse<T = string> {
             if (this.error) {
                 this.onErrorCallback(this.error);
             }
-            this.onFinishCallback(this.extraData);
+            this.onFinishCallback({extraData: this.extraData, tool: this.tool});
         });
     }
 
@@ -78,7 +95,10 @@ export class StreamingResponse<T = string> {
             } else if (parts[i].startsWith(MESSAGE_TYPE_STRINGS.event)) {
                 values.push({event: parts[i].substring(MESSAGE_TYPE_STRINGS.event.length)});
             } else if (parts[i].startsWith(MESSAGE_TYPE_STRINGS.extra)) {
-                values.push({extra: parts[i].substring(MESSAGE_TYPE_STRINGS.extra.length)})
+                values.push({extra: parts[i].substring(MESSAGE_TYPE_STRINGS.extra.length)});
+            } else if (parts[i].startsWith(MESSAGE_TYPE_STRINGS.tool)) {
+                const value = parts[i].substring(MESSAGE_TYPE_STRINGS.tool.length);
+                values.push({tool: value});
             }
         }
         return values;

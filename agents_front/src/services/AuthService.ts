@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, {AxiosError} from 'axios'
 import {LoginDTO, RegisterDTO, User} from "@/types/auth";
 
 
@@ -22,9 +22,16 @@ export class AuthService {
     }
 
     async getLoggedUser() {
-        const {status, data} = await axios.get<User|null>(`${this.route}`, {withCredentials: true});
-        if (status === 200) {
-            return data;
+        try {
+            const {status, data} = await axios.get<User|null>(`${this.route}`, {withCredentials: true});
+            if (status === 200) {
+                return data;
+            }
+        } catch (error: any) {
+            const path = window.location.pathname;
+            if (error.status && error.status === 401 && path !== '/login' && path !== '/register') {
+                window.location.href = '/login';
+            }
         }
         return null;
     }

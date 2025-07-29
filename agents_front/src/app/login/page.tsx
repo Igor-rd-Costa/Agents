@@ -4,11 +4,12 @@ import Link from 'next/link'
 import Button from '@mui/material/Button';
 import TextField from "@mui/material/TextField";
 import {useRouter} from "next/navigation";
-import AuthContext from "@/contexes/authContext";
+import AppContext from "@/contexes/appContext";
 
 export default function Page() {
     const router = useRouter();
-    const { user, setUser, authService } = useContext(AuthContext);
+    const { authContext } = useContext(AppContext);
+    const { user, setUser, authService } = authContext;
     const emailInput = useRef<HTMLInputElement>(null);
     const passwordInput = useRef<HTMLInputElement>(null);
 

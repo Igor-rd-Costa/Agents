@@ -4,11 +4,12 @@ import TextField from "@mui/material/TextField";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
 import React, {useContext, useEffect, useRef} from "react";
-import AuthContext from "@/contexes/authContext";
+import AppContext from "@/contexes/appContext";
 
 export default function Page() {
     const router = useRouter();
-    const { user, setUser, authService } = useContext(AuthContext);
+    const { authContext } = useContext(AppContext);
+    const { user, setUser, authService } = authContext;
     const usernameInput = useRef<HTMLInputElement>(null);
     const emailInput = useRef<HTMLInputElement>(null);
     const passwordInput = useRef<HTMLInputElement>(null);

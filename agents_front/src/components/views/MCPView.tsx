@@ -1,11 +1,11 @@
 'use client'
 import Button from "@mui/material/Button";
 import {useContext, useEffect, useState} from "react";
-import MCPContext from "@/contexes/mcpContext";
+import AppContext from "@/contexes/appContext";
 
-
-export default function McpPage() {
-    const { mcpService } = useContext(MCPContext);
+export default function MCPView() {
+    const { mcpContext } = useContext(AppContext);
+    const { mcpService } = mcpContext;
     const [tools, setTools] = useState<any[]>([]);
 
     useEffect(() => {
