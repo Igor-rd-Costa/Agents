@@ -2,7 +2,7 @@ from fastapi import Request
 from fastapi import APIRouter, Depends, HTTPException, Response
 from agents_back.db import get_db
 from agents_back.models.user import User
-from agents_back.types.auth import LoginDTO, RegisterDTO
+from agents_back.types.auth import LoginDTO, RegisterDTO, UserDTO
 import agents_back.core.security as security
 from agents_back.services.auth_service import get_auth_service, AuthService
 
@@ -10,7 +10,8 @@ router = APIRouter(prefix="/auth")
 
 @router.get("")
 async def get_logged_user(request: Request, auth_service: AuthService = Depends(get_auth_service)):
-    return await auth_service.get_current_user(request)
+    user = await auth_service.get_current_user(request)
+    return UserDTO(**user.model_dump(exclude={"password", "normalizedEmail"}))
 
 @router.post("/login")
 async def login(info: LoginDTO, response: Response, auth_service: AuthService = Depends(get_auth_service)):

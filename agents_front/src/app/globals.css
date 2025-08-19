@@ -15,6 +15,7 @@
 @theme {
   --color-primary: #90caf9;
   --color-primaryDark: #42a5f5;
+  --color-primaryLight: #a0daef;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -54,7 +54,7 @@ class ChatService:
             {"chat_id": chat_id},
             {"$push": {
                 "messages": {
-                    "$each": list(map(lambda m: dict(m), messages))
+                    "$each": list(map(lambda m: m.model_dump(), messages))
                 }
             }}
         )

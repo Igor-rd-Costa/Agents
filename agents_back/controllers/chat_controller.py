@@ -6,21 +6,13 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from agents_back.services.auth_service import AuthService, get_auth_service
 from agents_back.services.chat_service import ChatService, get_chat_service
-from agents_back.types.chat import ChatDTO, Message, DeleteChatDTO
+from agents_back.types.chat import ChatDTO, Message, DeleteChatDTO, MessageType, ToolCall
 from agents_back.types.general import ObjectId
 from agents_back.utils.agents import chat_messages_to_agent_message, base_prompt
 from agents_back.utils.responses import stream_llm_response
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/chat")
-
-class ToolCall(BaseModel):
-    name: str|None = None
-    namespace: str|None = None
-    args: dict = {}
-
-    def is_valid(self):
-        return self.name is not None and self.namespace is not None
 
 @router.post("")
 async def chat(chat: ChatDTO, request: Request,
@@ -32,7 +24,7 @@ async def chat(chat: ChatDTO, request: Request,
     active_chat = await chat_service.create_empty_chat(user.id) if chat.id is None else await chat_service.get_chat(chat.id, user.id)
 
     new_messages = [
-        Message(type="user", content=chat.message, timestamp=datetime.now())
+        Message(type=MessageType.MESSAGE, src="user", content=chat.message, timestamp=datetime.now())
     ]
     if active_chat is None:
         active_chat = await chat_service.create_empty_chat(user.id)
@@ -62,12 +54,14 @@ async def chat(chat: ChatDTO, request: Request,
 
     msg = "".join(tokens)
     tool_calls = []
+    message_type = MessageType.MESSAGE
     if msg.startswith("[") and msg.endswith("]"):
         tool_calls = parse_tool_calls(msg)
+        msg = tool_calls
+        message_type = MessageType.TOOL_CALL
         tokens = []
-    if len(tool_calls) == 0:
-        #TODO Support saving tool calls
-        new_messages.append(Message(type="agent", content=msg, timestamp=datetime.now()))
+
+    new_messages.append(Message(type=message_type, src="agent", content=msg, timestamp=datetime.now()))
     await chat_service.save_messages(active_chat.id, new_messages)
 
     extra_data = None

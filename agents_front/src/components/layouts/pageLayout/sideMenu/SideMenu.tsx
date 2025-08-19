@@ -9,9 +9,7 @@ import React, {
     useRef,
     useState
 } from "react";
-import {Chat} from "@/types/chat";
 import PersonIcon from "@mui/icons-material/Person"
-import {usePathname} from "next/navigation";
 import ArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
 import ArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft"
 import NavBar, {
@@ -24,6 +22,7 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import HardwareIcon from "@mui/icons-material/Hardware";
 import BrushIcon from "@mui/icons-material/Brush";
 import AppContext, {AppView} from "@/contexes/appContext";
+import {TalksChildren} from "@/components/layouts/pageLayout/sideMenu/components/TalksChildren";
 
 export type SideMenuRef = {
     isExpanded: boolean,
@@ -36,9 +35,7 @@ export type SideMenuRef = {
 export const sideMenuCanvasWidth = 384;
 
 const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
-    const pathName = usePathname();
-
-    const { authContext, chatContext, viewContext } = useContext(AppContext);
+    const { authContext, viewContext } = useContext(AppContext);
 
     const sectionRef = useRef<HTMLElement>(null);
     const menuAnimation = useRef<Animation|null>(null);
@@ -46,8 +43,8 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
     const navBarRef = useRef<NavBarRef>(null);
     const expandButtonRef = useRef<HTMLButtonElement>(null);
     const canvasDisplayRef = useRef<HTMLDivElement>(null);
+    const contentWrapperRef = useRef<HTMLDivElement>(null);
 
-    const [chats, setChats] = useState<Chat[]>([]);
     const [isExpanded, setIsExpanded] = useState<boolean>(true);
     const [navBarView, setNavBarView] = useState<NavBarView>(isExpanded ? 'horz' : 'vert');
     const [canvasDisplay, setCanvasDisplay] = useState<string|null>(null);
@@ -62,7 +59,8 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
             {
                 title: 'Canvas',
                 icon: <BrushIcon/>,
-                view: AppView.CANVAS
+                view: AppView.CANVAS,
+                disabled: canvasDisplay === null,
             },
             {
                 title: 'Agentes',
@@ -75,21 +73,7 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
                 view: AppView.MCP
             },
         ];
-    }, [viewContext.view]);
-
-    useEffect(() => {
-        if (pathName === '/') {
-            chatContext.chatService.getChats().then(c => {
-                setChats(c)
-            });
-        }
-    }, [navBarItems]);
-
-    useEffect(() => {
-        if (chatContext.chat.id !== null && chats.filter(c => c.id === chatContext.chat.id).length === 0) {
-            setChats([...chats, chatContext.chat]);
-        }
-    }, [chatContext.chat]);
+    }, [viewContext.view, canvasDisplay]);
 
     useEffect(() => {
         if (isExpanded && canvasDisplay && viewContext.view === AppView.CANVAS && canvasDisplayRef.current) {
@@ -101,7 +85,8 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
     }, [isExpanded, canvasDisplay, viewContext.view]);
 
     const toggleExpand = useCallback((view: AppView, expanded: boolean|undefined = undefined) => {
-        if (!sectionRef.current || !sectionRef.current.firstElementChild || !navBarWrapperRef.current) {
+        if (!sectionRef.current ||
+            !navBarWrapperRef.current || !contentWrapperRef.current) {
             return;
         }
 
@@ -113,13 +98,17 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
             return;
         }
 
-        const wrapper = sectionRef.current.firstElementChild;
+        const contentWrapper = contentWrapperRef.current;
+        const wrapper = sectionRef.current;
         const animationTiming = 150;
         const newWidth = expanded
             ? view === AppView.CANVAS ? sideMenuCanvasWidth : 256
             : 48;
+        const currentContentDisplay = getComputedStyle(contentWrapper).opacity;
+        const newContentDisplay = expanded ? '1' : '0';
 
-        if (menuAnimation.current) {
+        if (menuAnimation.current != null) {
+            menuAnimation.current.commitStyles();
             menuAnimation.current.cancel();
         }
 
@@ -130,36 +119,36 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
             navBarRef.current?.hide(animationTiming);
         }
 
-        const wrapperShouldRetract =
-            (view === AppView.CANVAS && !expanded)
-            || (viewContext.view === AppView.CANVAS && view !== AppView.CANVAS);
-        const wrapperChange =
-            wrapperShouldRetract
-            || (viewContext.view !== AppView.CANVAS && view === AppView.CANVAS);
+        const currentWidth = wrapper.getBoundingClientRect().width;
+        const contentAnimationBreakpoints = [{opacity: currentContentDisplay}, {opacity: newContentDisplay}];
+        const contentAnimationParams: KeyframeAnimationOptions = {duration: animationTiming, fill: 'forwards'};
 
-        if (wrapperChange) {
-            const section = sectionRef.current;
-            const currentSectionWidth = section.getBoundingClientRect().width;
-            const newWrapperWidth = wrapperShouldRetract ? 48 : newWidth;
-            if (currentSectionWidth !== newWrapperWidth) {
-                section.animate([{width: `${currentSectionWidth}px`}, {width: `${newWrapperWidth}px`}], {duration: animationTiming * 2.3, fill: 'forwards'});
-            }
+        if (expansionChange && !expanded) {
+            contentWrapper.animate(contentAnimationBreakpoints, contentAnimationParams)
+                .addEventListener('finish', () => {
+                    contentWrapper.style.display = 'none';
+                });
         }
 
-        const currentWidth = wrapper.getBoundingClientRect().width;
         menuAnimation.current = wrapper.animate(
             [{width: `${currentWidth}px`}, {width: `${newWidth}px`}],
             {duration: animationTiming * 2.3, fill: 'forwards'}
-        );
+        )
 
         menuAnimation.current.addEventListener('finish', () => {
-            menuAnimation.current = null;
+            if (menuAnimation.current) {
+                menuAnimation.current.commitStyles();
+                menuAnimation.current = null;
+            }
+
             if (expansionChange) {
                 setNavBarView(expanded ? 'horz' : 'vert');
                 navBarRef.current?.show(animationTiming);
                 if (expanded) {
                     navBarWrapperRef.current!.style.display = 'flex';
                     navBarWrapperRef.current!.style.gridTemplateRows = '48px';
+                    contentWrapper.style.display = '';
+                    contentWrapper.animate(contentAnimationBreakpoints, contentAnimationParams)
                 } else {
                     navBarWrapperRef.current!.style.display = 'grid';
                     navBarWrapperRef.current!.style.gridTemplateRows = '48px 1fr';
@@ -175,8 +164,8 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
     }
 
     useImperativeHandle(ref, () => ({
-       isExpanded,
-       toggleExpand,
+        isExpanded,
+        toggleExpand,
         canvas: {
             show: canvasShow
         }
@@ -184,6 +173,9 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
 
     const initialStyles = useMemo(() => {
         return {
+            section: {
+              width: isExpanded ? '256px' : '48px'
+            },
             navBarWrapper: {
                 display: isExpanded ? 'flex' : 'grid',
                 gridTemplateRows: isExpanded ? '48px' : '48px 1fr'
@@ -192,45 +184,49 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
     }, []);
 
     return (
-        <section ref={sectionRef} className="h-full w-[48px] overflow-x-visible z-[1] font-mono">
-            <div style={{width: isExpanded ? '256px' : '48px'}}  className="bg-[#151515] text-[#DDD] h-full">
-                <div className="h-fit w-full grid grid-cols-1 gap-y-12">
-                    <div style={initialStyles.navBarWrapper} ref={navBarWrapperRef} className="grid-cols-1">
-                        <div className="w-full overflow-x-hidden">
-                            <NavBar ref={navBarRef} view={navBarView} items={navBarItems} onNavigate={async (view) => {
-                                toggleExpand(view, true);
-                            }}/>
-                        </div>
-                        <button ref={expandButtonRef} type="button" className="flex items-center justify-center col-start-1 row-start-1
-                        justify-self-end
-                        hover:text-white cursor-pointer w-[48px] h-[48px]" onClick={() => toggleExpand(viewContext.view)}>
-                            {isExpanded
-                                ? <ArrowLeftIcon className="h-[24px] w-[24px]"/>
-                                : <ArrowRightIcon className="h-[24px] w-[24px]"/>
-                            }
-                        </button>
+        <section ref={sectionRef} style={initialStyles.section}  className="bg-[#151515] text-[#DDD] h-full">
+            <div className="h-fit w-full grid grid-cols-1 gap-y-12">
+                <div style={initialStyles.navBarWrapper} ref={navBarWrapperRef} className="grid-cols-1">
+                    <div className="w-full overflow-x-hidden">
+                        <NavBar ref={navBarRef} view={navBarView} items={navBarItems} onNavigate={async (view) => {
+                            toggleExpand(view, true);
+                        }}/>
                     </div>
+                    <button ref={expandButtonRef} type="button" className="flex items-center justify-center col-start-1 row-start-1
+                    justify-self-end
+                    hover:text-white cursor-pointer w-[48px] h-[48px]" onClick={() => toggleExpand(viewContext.view)}>
+                        {isExpanded
+                            ? <ArrowLeftIcon className="h-[24px] w-[24px]"/>
+                            : <ArrowRightIcon className="h-[24px] w-[24px]"/>
+                        }
+                    </button>
+                </div>
 
-                    {isExpanded ?? (
-                        <>
-                            <div className="pl-2 pr-2">
-                            {authContext.user ?
-                                <button className="flex gap-x-2 items-center hover:text-white cursor-pointer">
-                                    <div className="border rounded-full flex items-center align-center">
-                                        <PersonIcon/>
-                                    </div>
-                                    {authContext.user.username}
-                                </button>
-                                : <a href="/login" className="flex gap-x-2 items-center hover:text-white cursor-pointer">
-                                    <div className="border rounded-full flex items-center align-center">
-                                        <PersonIcon/>
-                                    </div>
-                                    Login
-                                </a>
-                            }
-                            </div>
-                        </>
-                    )}
+                {isExpanded ?? (
+                    <>
+                        <div className="pl-2 pr-2">
+                        {authContext.user ?
+                            <button className="flex gap-x-2 items-center hover:text-white cursor-pointer">
+                                <div className="border rounded-full flex items-center align-center">
+                                    <PersonIcon/>
+                                </div>
+                                {authContext.user.username}
+                            </button>
+                            : <a href="/login" className="flex gap-x-2 items-center hover:text-white cursor-pointer">
+                                <div className="border rounded-full flex items-center align-center">
+                                    <PersonIcon/>
+                                </div>
+                                Login
+                            </a>
+                        }
+                        </div>
+                    </>
+                )}
+                <div ref={contentWrapperRef} className="w-full">
+                    {viewContext.view === AppView.CHATS ?
+                        <TalksChildren/>
+                        : <></>
+                    }
                     <div ref={canvasDisplayRef} style={{width: `${sideMenuCanvasWidth}px`, height: `${sideMenuCanvasWidth}px`, display: 'none'}} className="p-4"></div>
                 </div>
             </div>

@@ -1,10 +1,11 @@
 import React, {useContext, useEffect, useRef, useState} from "react";
 import Button from "@mui/material/Button";
-import Message, {MessageType} from "@/components/mainPage/Message";
+import Message, {MessageSrc, MessageType} from "@/components/mainPage/Message";
 import AppContext from "@/contexes/appContext";
 
 type MessageDTO = {
     type: MessageType,
+    src: MessageSrc,
     content: string
 }
 
@@ -19,7 +20,7 @@ export default function ChatsView() {
 
     useEffect(() => {
         if (message !== "") {
-            setMessages(m => [...m, {type: 'agent', content: message}]);
+            setMessages(m => [...m, {type: MessageType.MESSAGE, src: 'agent', content: message}]);
             setMessage("");
         }
     }, [endToggle]);
@@ -48,7 +49,7 @@ export default function ChatsView() {
         }
 
         setMessage("");
-        setMessages(m => [...m, {type: 'user', content: value}]);
+        setMessages(m => [...m, {type: MessageType.MESSAGE, src: 'user', content: value}]);
         input.current.value = "";
         setTimeout(() => {
             if (messagesWrapper.current) {
@@ -81,7 +82,7 @@ export default function ChatsView() {
                             if (tool.name === 'message' && tool.args['msg']) {
                                 setMessages([
                                     ...messages,
-                                    { type: 'agent', content: tool.args['msg']}
+                                    { type: MessageType.TOOL_CALL, src: 'agent', content: tool.args['msg'] }
                                 ]);
                             }
                         }
@@ -96,10 +97,10 @@ export default function ChatsView() {
         <div className="h-full w-full overflow-y-hidden grid grid-rows-[1fr_auto] p-4 justify-items-center pt-0 pr-8 gap-8">
             <div ref={messagesWrapper} className="overflow-y-scroll gap-y-4 flex flex-col w-[90%] p-2 pt-8">
                 {messages.map((m, i) => {
-                    return <Message key={i} icon={m.type} content={m.content}/>
+                    return <Message key={i} type={m.type} icon={m.src} content={m.content}/>
                     }
                 )}
-                {message !== "" ? <Message icon="agent" content={message}/> : <></>}
+                {message !== "" ? <Message type={MessageType.MESSAGE} icon="agent" content={message}/> : <></>}
             </div>
             <form onSubmit={onSubmit} className="h-[8rem] w-[65%] grid grid-cols-[1fr_auto] gap-4 items-center">
                 <textarea ref={input} className="border border-primary rounded-md h-full p-1 pl-2 pr-2 outline-none">

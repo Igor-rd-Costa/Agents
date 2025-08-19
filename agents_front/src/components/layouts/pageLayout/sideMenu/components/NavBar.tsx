@@ -7,7 +7,8 @@ export type NavBarView = 'horz'|'vert';
 export type NavBarItemInfo = {
     title: string,
     icon: React.ReactNode,
-    view: AppView
+    view: AppView,
+    disabled?: boolean
 }
 
 export type NavBarProps = {
@@ -57,7 +58,7 @@ const NavBar = React.forwardRef<NavBarRef, NavBarProps>((
     return (
         <div style={{width: `${items.length * 48}px`}} ref={navBarRef} className={`flex ${view === 'horz' ? 'flex-row' : 'flex-col'} ${classList}`}>
             {items.map((item, idx) => (
-                <NavBarButton key={idx} title={item.title} selected={item.view === viewContext.view} onClick={() => navigate(item.view)}>
+                <NavBarButton key={idx} title={item.title} selected={item.view === viewContext.view} onClick={() => navigate(item.view)} disabled={item.disabled}>
                     {item.icon}
                 </NavBarButton>
             ))}
