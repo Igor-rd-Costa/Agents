@@ -33,14 +33,6 @@ export class ChatService {
         const {data} = await axios.delete(this.backend, {withCredentials: true, data: {id: chatId}});
         return data;
     }
-
-    public async test() {
-        try {
-            const {data} = await axios.post(`${this.backend}/test`, {withCredentials: true});
-        } catch (error) {
-            console.error("Tool Call Failed", error);
-        }
-    }
 }
 
 const chatService = new ChatService();

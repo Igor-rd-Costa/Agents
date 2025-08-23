@@ -16,7 +16,7 @@ export default function ChatsView() {
     const [endToggle, setEndToggle] = useState(false);
     const [messages, setMessages] = useState<MessageDTO[]>([]);
     const messagesWrapper = useRef<HTMLDivElement>(null);
-    const input = useRef<HTMLTextAreaElement>(null);
+    const input = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (message !== "") {
@@ -38,19 +38,18 @@ export default function ChatsView() {
         }
     }, [chat]);
 
-    const onSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
+    const onSubmit = async () => {
         if (!input.current) {
             return;
         }
-        const value = input.current.value;
+        const value = input.current.innerText;
         if (value === "") {
             return;
         }
 
         setMessage("");
         setMessages(m => [...m, {type: MessageType.MESSAGE, src: 'user', content: value}]);
-        input.current.value = "";
+        input.current.innerText = "";
         setTimeout(() => {
             if (messagesWrapper.current) {
                 messagesWrapper.current.scrollTo(0, messagesWrapper.current.scrollHeight);
@@ -93,6 +92,13 @@ export default function ChatsView() {
         })
     }
 
+    const onKeyDown = async (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            await onSubmit();
+        }
+    }
+
     return (
         <div className="h-full w-full overflow-y-hidden grid grid-rows-[1fr_auto] p-4 justify-items-center pt-0 pr-8 gap-8">
             <div ref={messagesWrapper} className="overflow-y-scroll gap-y-4 flex flex-col w-[90%] p-2 pt-8">
@@ -102,9 +108,13 @@ export default function ChatsView() {
                 )}
                 {message !== "" ? <Message type={MessageType.MESSAGE} icon="agent" content={message}/> : <></>}
             </div>
-            <form onSubmit={onSubmit} className="h-[8rem] w-[65%] grid grid-cols-[1fr_auto] gap-4 items-center">
-                <textarea ref={input} className="border border-primary rounded-md h-full p-1 pl-2 pr-2 outline-none">
-                </textarea>
+            <form onSubmit={async (e) => {
+                e.preventDefault();
+                await onSubmit();
+            }} className="h-[8rem] w-[65%] grid grid-cols-[1fr_auto] gap-4 items-center">
+                <div ref={input} className="border border-primary rounded-md h-full p-1 pl-2 pr-2 outline-none"
+                 onKeyDown={onKeyDown} contentEditable="true">
+                </div>
                 <Button type="submit" variant={'contained'}>Send</Button>
             </form>
         </div>

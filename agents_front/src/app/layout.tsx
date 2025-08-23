@@ -12,6 +12,7 @@ import {Chat} from "@/types/chat";
 import mcpService from "@/services/MCPService";
 import AppContext, {AppContextType, AppView} from "@/contexes/appContext";
 import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
+import {useRouter} from "next/navigation";
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -25,6 +26,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const router = useRouter();
   const [ user, setUser ] = useState<User|null>(null);
   const [ view, setView ] = useState<AppView>(AppView.CHATS);
   const [ chat, setChat ] = useState<Chat>(chatService.emptyChat());
@@ -36,6 +38,8 @@ export default function RootLayout({
       authService.getLoggedUser().then(loggedUser => {
         if (loggedUser !== null) {
           setUser(loggedUser);
+        } else {
+          router.push('/login');
         }
       });
     }

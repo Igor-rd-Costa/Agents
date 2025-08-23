@@ -1,5 +1,5 @@
-import axios, {AxiosError} from 'axios'
-import {LoginDTO, RegisterDTO, User} from "@/types/auth";
+import axios from 'axios'
+import { LoginDTO, RegisterDTO, User } from "@/types/auth";
 
 
 export class AuthService {
