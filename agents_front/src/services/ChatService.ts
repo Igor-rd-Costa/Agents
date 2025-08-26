@@ -1,25 +1,24 @@
-import {Chat} from "@/types/chat";
-import {StreamingResponse} from "@/types/http";
+import {Chat} from "@/types/chat/Chat";
+import {ChatDTO} from "@/types/chat/ChatDTO";
+import {SSEEventType, SSEMessage, SSEStream, StreamingResponse} from "@/types/http";
 import axios from "axios";
-
 
 export class ChatService {
     private backend = "http://127.0.0.1:8000/chat"
 
-    public emptyChat(): Chat {
-        return {
-            id: null,
-            name: '',
-            createdAt: new Date(Date.now()),
-            updatedAt: new Date(Date.now())
-        };
+    public connect(chatId: string|null) {
+        return new SSEStream(this.backend, 'POST', new SSEMessage(
+            chatId ?? '',
+            'connect',
+            SSEEventType.REQUEST
+        ));
     }
 
     public sendMessage(chatId: string|null, message: string): StreamingResponse<Chat> {
         return new StreamingResponse<Chat>(this.backend, 'POST', JSON.stringify({id: chatId, message}));
     }
 
-    public async getChats(): Promise<Chat[]> {
+    public async getChats(): Promise<ChatDTO[]> {
         const {data} = await axios.get(`${this.backend}`, {withCredentials: true});
         return data;
     }
@@ -37,4 +36,4 @@ export class ChatService {
 
 const chatService = new ChatService();
 
-export default chatService
+export default chatService;

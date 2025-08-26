@@ -11,7 +11,7 @@ export default function PageLayout({children}: React.PropsWithChildren) {
     }, []);
 
     return (
-        <div className="grid w-screen h-screen grid-cols-[auto_1fr]">
+        <div className="grid w-screen h-screen overflow-hidden grid-cols-[auto_1fr] grid-rows-1">
             <SideMenu ref={sideMenuRef}/>
             <div className="w-full h-full">
                 {children}

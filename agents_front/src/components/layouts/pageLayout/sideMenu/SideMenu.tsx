@@ -185,7 +185,7 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
 
     return (
         <section ref={sectionRef} style={initialStyles.section}  className="bg-[#151515] text-[#DDD] h-full">
-            <div className="h-fit w-full grid grid-cols-1 gap-y-12">
+            <div className="h-fit w-full grid grid-cols-1 gap-y-12 grid-rows-[auto_1fr]">
                 <div style={initialStyles.navBarWrapper} ref={navBarWrapperRef} className="grid-cols-1">
                     <div className="w-full overflow-x-hidden">
                         <NavBar ref={navBarRef} view={navBarView} items={navBarItems} onNavigate={async (view) => {

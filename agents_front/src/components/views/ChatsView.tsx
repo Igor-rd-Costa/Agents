@@ -2,6 +2,8 @@ import React, {useContext, useEffect, useRef, useState} from "react";
 import Button from "@mui/material/Button";
 import Message, {MessageSrc, MessageType} from "@/components/mainPage/Message";
 import AppContext from "@/contexes/appContext";
+import {Chat} from "@/types/chat/Chat"
+import {ToolCall} from "@/types/http";
 
 type MessageDTO = {
     type: MessageType,
@@ -26,9 +28,9 @@ export default function ChatsView() {
     }, [endToggle]);
 
     useEffect(() => {
-        if (chat.id) {
+        if (chat.getId()) {
             new Promise<void>(async (resolve) => {
-               const data = await chatService.getMessages(chat.id!);
+               const data = await chatService.getMessages(chat.getId()!);
                setMessages(data.messages);
                resolve();
             }).then(() => {});
@@ -42,9 +44,18 @@ export default function ChatsView() {
         if (!input.current) {
             return;
         }
-        const value = input.current.innerText;
+        const value = input.current.innerText.trim();
         if (value === "") {
             return;
+        }
+
+        const chatConnection = chat.getConnection();
+
+        if (!chatConnection.getIsConnected()) {
+            if (!await chatConnection.connect()) {
+                return;
+            }
+            console.log("Connected!");
         }
 
         setMessage("");
@@ -55,41 +66,41 @@ export default function ChatsView() {
                 messagesWrapper.current.scrollTo(0, messagesWrapper.current.scrollHeight);
             }
         }, 10)
-        const result = chatService.sendMessage(chat?.id ?? null, value);
-        result.onData(data => {
-            setMessage(m => m + data);
-            setTimeout(() => {
-                if (messagesWrapper.current) {
-                    messagesWrapper.current.scrollTo(0, messagesWrapper.current.scrollHeight);
-                }
-            }, 10)
-        });
-        result.onError(error => {
-            console.error("StreamingResponse Error", error);
-        })
-        result.onFinish(arg => {
-            if (arg.extraData) {
-                setChat(arg.extraData);
-            }
-            if (arg.tool) {
-                arg.tool.forEach(tool => {
-                    if (tool.name && tool.namespace) {
-                        if (tool.namespace === 'agnt') {
-                            if (tool.name === 'canvas-show' && tool.args['svg'] && components.sideMenuRef.current) {
-                                components.sideMenuRef.current.canvas.show(tool.args['svg']);
-                            }
-                            if (tool.name === 'message' && tool.args['msg']) {
-                                setMessages([
-                                    ...messages,
-                                    { type: MessageType.TOOL_CALL, src: 'agent', content: tool.args['msg'] }
-                                ]);
+
+        await chatConnection.sendMessage(value, (message => {
+            const data = message.getData();
+            const msg = data?.data;
+            const chatDTO = data?.chat;
+            if (msg) {
+                if (data?.messageType === MessageType.MESSAGE) {
+                    setMessages(m => [...m, {type: MessageType.MESSAGE, src: 'agent', content: msg as string}]);
+                } else {
+                    (msg as ToolCall[]).forEach(tool => {
+                        if (tool.name && tool.namespace) {
+                            if (tool.namespace === 'agnt') {
+                                if (tool.name === 'canvas-show' && tool.args['svg'] && components.sideMenuRef.current) {
+                                    components.sideMenuRef.current.canvas.show(tool.args['svg']);
+                                }
+                                if (tool.name === 'message' && tool.args['msg']) {
+                                    setMessages([
+                                        ...messages,
+                                        { type: MessageType.TOOL_CALL, src: 'agent', content: tool.args['msg'] }
+                                    ]);
+                                }
                             }
                         }
-                    }
-                })
+                    });
+                }
             }
-            setEndToggle(!endToggle);
-        })
+            if (chatDTO) {
+                setChat(new Chat(
+                    chatDTO.id,
+                    chatDTO.name,
+                    chatDTO.createdAt,
+                    chatDTO.updatedAt
+                ));
+            }
+        }));
     }
 
     const onKeyDown = async (event: React.KeyboardEvent) => {

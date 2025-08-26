@@ -8,11 +8,11 @@ import React, {RefObject, useEffect, useState} from "react";
 import {User} from "@/types/auth";
 import {authService} from "@/services/AuthService";
 import chatService from "@/services/ChatService";
-import {Chat} from "@/types/chat";
 import mcpService from "@/services/MCPService";
 import AppContext, {AppContextType, AppView} from "@/contexes/appContext";
 import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
 import {useRouter} from "next/navigation";
+import {Chat} from "@/types/chat/Chat";
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -26,12 +26,12 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const router = useRouter();
   const [ user, setUser ] = useState<User|null>(null);
   const [ view, setView ] = useState<AppView>(AppView.CHATS);
-  const [ chat, setChat ] = useState<Chat>(chatService.emptyChat());
+  const [ chat, setChat ] = useState<Chat>(new Chat());
   const [ mcp, setMcp ] = useState<any>({});
   const [sideMenuRef, setSideMenuRef] = useState<RefObject<SideMenuRef|null>>({current: null});
+  const router = useRouter();
 
   useEffect(() => {
     if (user === null) {

@@ -1,10 +1,9 @@
-# agents_back/services/auth_service.py
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
 from datetime import timedelta
 
-from agents_back.models.user import User # Your User SQLModel
+from agents_back.models.user import User
 from agents_back.db import get_db
 from agents_back.core.security import (
     hash_password,
@@ -65,9 +64,7 @@ class AuthService:
         request: Request
     ) -> User:
         credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_401_UNAUTHORIZED
         )
         token = request.cookies.get('auth_token')
         try:
@@ -96,6 +93,17 @@ class AuthService:
 
         user = await self.db["users"].find_one({"normalizedEmail": token_data.sub.upper()})
         return user
+
+    async def validate_connection_ownership(
+            self,
+            connection_id: str,
+            request: Request
+    ):
+        user = await self.get_current_user(request)
+        if not connection_id.startswith(str(user.id)):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
 
 # Helper dependency to get an AuthService instance
 def get_auth_service(db = Depends(get_db)):

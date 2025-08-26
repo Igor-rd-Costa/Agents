@@ -3,7 +3,7 @@ import {AuthService, authService} from "@/services/AuthService";
 import chatService, {ChatService} from "@/services/ChatService";
 import mcpService, {MCPService} from "@/services/MCPService";
 import {User} from "@/types/auth";
-import {Chat} from "@/types/chat";
+import {Chat} from "@/types/chat/Chat";
 import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
 
 export enum AppView {
@@ -62,7 +62,7 @@ const defaultAppContext: AppContextType = {
         setView: () => {}
     },
     chatContext: {
-        chat: chatService.emptyChat(),
+        chat: new Chat(),
         setChat: () => {},
         chatService
     },

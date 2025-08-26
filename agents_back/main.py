@@ -1,4 +1,7 @@
 from dotenv import load_dotenv
+
+from agents_back.middleware.request_middleware import RequestMiddleware
+
 load_dotenv()
 
 from contextlib import asynccontextmanager
@@ -25,6 +28,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(RequestMiddleware)
+
+from fastapi import HTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print(f"Validation error on {request.method} {request.url}")
+    print(f"Headers: {dict(request.headers)}")
+    print(f"Error details: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body}
+    )
 
 from controllers import __path__ as controller_path
 
