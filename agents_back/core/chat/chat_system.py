@@ -8,12 +8,13 @@ from agents_back.types.chat import MessageType, Message, ToolCall
 from agents_back.models.chat import Chat
 from agents_back.types.general import ObjectId
 from agents_back.types.sse import SSEMessage, SSEMessageRequestData, SSEEvent, SSEEventType, ConnectionState
-from agents_back.utils.agents import base_prompt, chat_messages_to_agent_message
+from agents_back.utils.agents import base_prompt, chat_messages_to_agent_message, build_receptionist_prompt
+from agents_back.utils.tools import parse_tool_calls
 from fastapi import HTTPException, Depends, Request
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-from agents_back.utils.tools import parse_tool_calls
+
 
 active_connections: dict[str, ConnectionState] = {}
 
@@ -96,3 +97,40 @@ async def do_chat_task(message: SSEMessage):
         eventType=SSEEventType.RESPONSE,
         data= ChatResponse(data=msg, messageType=message_type, chat=extra_data).model_dump_json(),
     )
+
+
+
+
+
+agents = [
+    { "name": "General", "description": "Assistant responsible for anwsering to general messages, used when no specialized agent matches the user message needs" },
+    { "name": "DashboardBuilder", "description": "Assistant specialized in building dashboard and analytical structures like charts and tables" }
+]
+
+async def route_message(message: str):
+    messages = [
+        ("system", build_receptionist_prompt(agents)),
+    ]
+
+    messages.append(("user", message))
+
+    template = ChatPromptTemplate.from_messages(messages)
+    llm = ChatGroq(model="llama-3.3-70b-versatile")
+    chain = template | llm
+    tokens = []
+    async for chunk in chain.astream({}):
+        if chunk.content:
+            tokens.append(chunk.content)
+
+    name = "".join(tokens)
+    is_agent = is_agent_name(name)
+    if not is_agent:
+        print(f"[Router Agent] Invalid output: {name}")
+        return agents[0]["name"]
+    return name
+
+def is_agent_name(name: str):
+    for agent in agents:
+        if agent["name"] is name:
+            return True
+    return False
