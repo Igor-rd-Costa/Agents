@@ -10,7 +10,6 @@ from agents_back.types.chat import ChatMember, Message
 from agents_back.types.general import ObjectId
 from agents_back.utils.mongodb import mongo_document_to_type
 
-
 class ChatService:
 
     def __init__(self, db):

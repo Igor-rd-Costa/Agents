@@ -65,11 +65,7 @@ class SSEMessage(BaseModel):
 class ConnectionState:
     queue: Queue
     hanging_pings: list[str]
-    auth_service: AuthService
-    chat_service: ChatService
 
-    def __init__(self, queue: Queue, auth_service: AuthService, chat_service: ChatService):
+    def __init__(self, queue: Queue):
         self.queue = queue
         self.hanging_pings = []
-        self.auth_service = auth_service
-        self.chat_service = chat_service

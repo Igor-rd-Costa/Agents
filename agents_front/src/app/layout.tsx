@@ -13,6 +13,7 @@ import AppContext, {AppContextType, AppView} from "@/contexes/appContext";
 import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
 import {useRouter} from "next/navigation";
 import {Chat} from "@/types/chat/Chat";
+import { TopPanelRef } from "@/components/layouts/pageLayout/topPanel/TopPanel";
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -30,7 +31,8 @@ export default function RootLayout({
   const [ view, setView ] = useState<AppView>(AppView.CHATS);
   const [ chat, setChat ] = useState<Chat>(new Chat());
   const [ mcp, setMcp ] = useState<any>({});
-  const [sideMenuRef, setSideMenuRef] = useState<RefObject<SideMenuRef|null>>({current: null});
+  const [ sideMenuRef, setSideMenuRef ] = useState<RefObject<SideMenuRef|null>>({current: null});
+  const [ topPanelRef, setTopPanelRef ] = useState<RefObject<TopPanelRef|null>>({current: null});
   const router = useRouter();
 
   useEffect(() => {
@@ -67,8 +69,10 @@ export default function RootLayout({
       mcpService
     },
     components: {
-      sideMenuRef: sideMenuRef,
-      setSideMenuRef: setSideMenuRef
+      sideMenuRef,
+      setSideMenuRef,
+      topPanelRef,
+      setTopPanelRef
     }
   }
 

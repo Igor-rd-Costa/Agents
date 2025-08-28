@@ -23,7 +23,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://192.168.1.85:3000", "http://127.0.0.1:3000"],
+    allow_origins=["http://localhost:3000", "http://192.168.1.85:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://192.168.1.85:3001", "http://127.0.0.1:3001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,10 +46,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors(), "body": exc.body}
     )
 
-from controllers import __path__ as controller_path
+from agents_back.controllers import __path__ as controller_path
 
 for _, module_name, _ in pkgutil.iter_modules(controller_path):
-    module = importlib.import_module(f"controllers.{module_name}")
+    module = importlib.import_module(f"agents_back.controllers.{module_name}")
     router = getattr(module, "router", None)
     if router:
         app.include_router(router)

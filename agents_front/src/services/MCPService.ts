@@ -1,8 +1,9 @@
+import { backendUrl } from "@/types/http";
 import axios from "axios";
 
 
 export class MCPService {
-    private readonly backend = "http://127.0.0.1:8000/mcp"
+    private readonly backend = `${backendUrl}mcp`
 
     async test() {
         return await axios.get(this.backend, {withCredentials: true});

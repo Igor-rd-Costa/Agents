@@ -1,10 +1,10 @@
 import {Chat} from "@/types/chat/Chat";
 import {ChatDTO} from "@/types/chat/ChatDTO";
-import {SSEEventType, SSEMessage, SSEStream, StreamingResponse} from "@/types/http";
+import {backendUrl, SSEEventType, SSEMessage, SSEStream, StreamingResponse} from "@/types/http";
 import axios from "axios";
 
 export class ChatService {
-    private backend = "http://127.0.0.1:8000/chat"
+    private backend = `${backendUrl}chat`
 
     public connect(chatId: string|null) {
         return new SSEStream(this.backend, 'POST', new SSEMessage(

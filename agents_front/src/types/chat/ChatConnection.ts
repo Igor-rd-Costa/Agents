@@ -42,7 +42,7 @@ export default class ChatConnection {
         }
 
         await this.connectionStream!.send<SSEMessageData, ChatData>(new SSEMessage<SSEMessageData>(
-            crypto.randomUUID(),
+            "AAAAAA",
             'message',
             SSEEventType.REQUEST,
             new SSEMessageData<string>(conId, message),

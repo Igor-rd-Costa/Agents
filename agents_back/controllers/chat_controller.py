@@ -1,4 +1,7 @@
+from contextvars import ContextVar
 from typing import Optional
+from agents_back.middleware.request_middleware import request_context
+from agents_back.utils.utils import Services, services_context
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.params import Query
 from agents_back.services.auth_service import AuthService, get_auth_service
@@ -16,6 +19,12 @@ async def chat(message: SSEMessage,
                request: Request,
                auth_service: AuthService = Depends(get_auth_service),
                chat_service: ChatService = Depends(get_chat_service)):
+
+    services_context.set(Services(
+        auth_service=auth_service,
+        chat_service=chat_service,
+        request=request_context.get()
+    ))
 
     if message.event == SSEEvent.CONNECTED:
         connection_id = await build_connection_id(message, auth_service, request)

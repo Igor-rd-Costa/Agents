@@ -5,6 +5,7 @@ import mcpService, {MCPService} from "@/services/MCPService";
 import {User} from "@/types/auth";
 import {Chat} from "@/types/chat/Chat";
 import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
+import { TopPanelRef } from "@/components/layouts/pageLayout/topPanel/TopPanel";
 
 export enum AppView {
     CHATS,
@@ -40,6 +41,8 @@ type MCPContextType = {
 type ComponentsContextType = {
     sideMenuRef: React.RefObject<SideMenuRef|null>,
     setSideMenuRef: (ref: React.RefObject<SideMenuRef|null>) => void
+    topPanelRef: React.RefObject<TopPanelRef|null>,
+    setTopPanelRef: (ref: React.RefObject<TopPanelRef|null>) => void
 }
 
 
@@ -73,7 +76,9 @@ const defaultAppContext: AppContextType = {
     },
     components: {
         sideMenuRef: {current: null},
-        setSideMenuRef: () => {}
+        setSideMenuRef: () => {},
+        topPanelRef: {current: null},
+        setTopPanelRef: () => {}
     }
 }
 

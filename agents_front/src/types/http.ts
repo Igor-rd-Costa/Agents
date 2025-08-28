@@ -23,6 +23,9 @@ const MESSAGE_TYPE_STRINGS =  {
     tool: "tool: "
 };
 
+
+export const backendUrl = "http://192.168.1.85:8000/";
+
 export enum SSEEventType {
     REQUEST,
     RESPONSE,

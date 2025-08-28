@@ -72,6 +72,7 @@ export default function ChatsView() {
             const msg = data?.data;
             const chatDTO = data?.chat;
             if (msg) {
+                console.log("Got message", data);
                 if (data?.messageType === MessageType.MESSAGE) {
                     setMessages(m => [...m, {type: MessageType.MESSAGE, src: 'agent', content: msg as string}]);
                 } else {

@@ -1,5 +1,4 @@
 from enum import IntEnum
-
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -11,6 +10,7 @@ class ChatMember(BaseModel):
 class MessageType(IntEnum):
     MESSAGE = 0
     TOOL_CALL = 1
+    AGENT_CALL = 2
 
 class ToolCall(BaseModel):
     name: str | None = None
@@ -23,7 +23,7 @@ class ToolCall(BaseModel):
 class Message(BaseModel):
     type: MessageType
     src: str
-    content: str|list[ToolCall]
+    content: str|list[ToolCall]|object
     timestamp: datetime
 
 class ChatDTO(BaseModel):

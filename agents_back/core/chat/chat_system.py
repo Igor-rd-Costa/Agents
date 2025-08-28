@@ -1,24 +1,20 @@
 from http.client import HTTPException
-from langchain_groq.chat_models import ChatGroq
-from langchain_core.prompts.chat import ChatPromptTemplate
-from agents_back.middleware.request_middleware import get_current_request, request_context
-from agents_back.services.auth_service import AuthService
-from agents_back.services.chat_service import ChatService
+from agents_back.core.chat.agents.router_agent import RouterAgent
+from fastapi import HTTPException
+from pydantic import BaseModel, Field,ConfigDict
+from datetime import datetime
+from agents_back.utils.utils import services_context
 from agents_back.types.chat import MessageType, Message, ToolCall
 from agents_back.models.chat import Chat
 from agents_back.types.general import ObjectId
 from agents_back.types.sse import SSEMessage, SSEMessageRequestData, SSEEvent, SSEEventType, ConnectionState
-from agents_back.utils.agents import base_prompt, chat_messages_to_agent_message, build_receptionist_prompt
-from agents_back.utils.tools import parse_tool_calls
-from fastapi import HTTPException, Depends, Request
-from pydantic import BaseModel, Field
-from datetime import datetime
-
+from agents_back.core.chat.agents.agent_base import AgentBase, ChatContext
 
 
 active_connections: dict[str, ConnectionState] = {}
 
 class ChatResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
     data: str|list[ToolCall]
     message_type: MessageType = Field(alias="messageType")
     chat: Chat|None
@@ -34,10 +30,10 @@ def get_chat_id_from_connection_id(connection_id: str):
 
 async def do_chat_task(message: SSEMessage):
     data: SSEMessageRequestData = message.get_data()
-    connection_state = active_connections[data.connection_id]
-    auth_service = connection_state.auth_service
-    chat_service = connection_state.chat_service
-    request = request_context.get()
+    services = services_context.get()
+    auth_service = services.auth_service
+    chat_service = services.chat_service
+    request = services.request
     user = await auth_service.get_current_user(request)
     msg = data.data
     chat_id = get_chat_id_from_connection_id(data.connection_id)
@@ -46,45 +42,24 @@ async def do_chat_task(message: SSEMessage):
         raise HTTPException(status_code=400)
     active_chat = await chat_service.create_empty_chat(user.id) if chat_id is None else await chat_service.get_chat(chat_id, user.id)
 #
-    new_messages = [
-        Message(type=MessageType.MESSAGE, src="user", content=msg, timestamp=datetime.now())
-    ]
+    user_msg = Message(type=MessageType.MESSAGE, src="user", content=msg, timestamp=datetime.now())
     if active_chat is None:
         active_chat = await chat_service.create_empty_chat(user.id)
         chat_id = None
 
-    messages = [
-        ("system", base_prompt),
+    chat_context = ChatContext(message=user_msg, chat=active_chat)
+
+    route_response = await RouterAgent().invoke(chat_context)
+
+    agent: AgentBase = route_response.message.content
+    print(f"Selected agent: {agent}")
+    agent_response = await agent.invoke(chat_context)
+
+    new_messages = [
+        user_msg,
+        agent_response.message
     ]
 
-    db_messages = await chat_service.get_messages(active_chat.id)
-
-    message_count = len(db_messages.messages if db_messages else 0)
-    for i in reversed(range(0, message_count if message_count <= 10 else 10)):
-        message = db_messages.messages[i]
-        messages.append(chat_messages_to_agent_message(message))
-
-    messages.append(("user", msg))
-
-    template = ChatPromptTemplate.from_messages(messages)
-    llm = ChatGroq(model="llama-3.3-70b-versatile")
-    chain = template | llm
-
-    tokens = []
-    async for chunk in chain.astream({}):
-        if chunk.content:
-            tokens.append(chunk.content)
-
-    msg = "".join(tokens)
-    tool_calls = []
-    message_type = MessageType.MESSAGE
-    if msg.startswith("[") and msg.endswith("]"):
-        tool_calls = parse_tool_calls(msg)
-        msg = tool_calls
-        message_type = MessageType.TOOL_CALL
-        tokens = []
-
-    new_messages.append(Message(type=message_type, src="agent", content=msg, timestamp=datetime.now()))
     await chat_service.save_messages(active_chat.id, new_messages)
 
     extra_data = None
@@ -95,42 +70,5 @@ async def do_chat_task(message: SSEMessage):
         id=message.id,
         event=SSEEvent.MESSAGE,
         eventType=SSEEventType.RESPONSE,
-        data= ChatResponse(data=msg, messageType=message_type, chat=extra_data).model_dump_json(),
+        data= ChatResponse(data=agent_response.message.content, message_type=agent_response.message.type, chat=extra_data).model_dump_json(by_alias=True),
     )
-
-
-
-
-
-agents = [
-    { "name": "General", "description": "Assistant responsible for anwsering to general messages, used when no specialized agent matches the user message needs" },
-    { "name": "DashboardBuilder", "description": "Assistant specialized in building dashboard and analytical structures like charts and tables" }
-]
-
-async def route_message(message: str):
-    messages = [
-        ("system", build_receptionist_prompt(agents)),
-    ]
-
-    messages.append(("user", message))
-
-    template = ChatPromptTemplate.from_messages(messages)
-    llm = ChatGroq(model="llama-3.3-70b-versatile")
-    chain = template | llm
-    tokens = []
-    async for chunk in chain.astream({}):
-        if chunk.content:
-            tokens.append(chunk.content)
-
-    name = "".join(tokens)
-    is_agent = is_agent_name(name)
-    if not is_agent:
-        print(f"[Router Agent] Invalid output: {name}")
-        return agents[0]["name"]
-    return name
-
-def is_agent_name(name: str):
-    for agent in agents:
-        if agent["name"] is name:
-            return True
-    return False

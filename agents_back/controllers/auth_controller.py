@@ -25,9 +25,9 @@ async def login(info: LoginDTO, response: Response, auth_service: AuthService = 
         key="auth_token",
         value=token.access_token,
         httponly=False,
-        secure=True,
+        secure=False,
         max_age=3600,
-        samesite="none"
+        samesite="Lax"
     )
     return user
 
