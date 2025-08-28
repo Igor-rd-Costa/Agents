@@ -77,8 +77,7 @@ class GeneralAgent(AgentBase):
             if chunk.content:
                 tokens.append(chunk.content)
 
-        output = "".join(tokens)
-        msg = output
+        msg = "".join(tokens)
         tool_calls = []
         message_type = MessageType.MESSAGE
         if msg.startswith("[") and msg.endswith("]"):

@@ -4,6 +4,7 @@ import Message, {MessageSrc, MessageType} from "@/components/mainPage/Message";
 import AppContext from "@/contexes/appContext";
 import {Chat} from "@/types/chat/Chat"
 import {ToolCall} from "@/types/http";
+import { KeyboardArrowLeft, KeyboardArrowRight } from "@mui/icons-material";
 
 type MessageDTO = {
     type: MessageType,
@@ -18,7 +19,9 @@ export default function ChatsView() {
     const [endToggle, setEndToggle] = useState(false);
     const [messages, setMessages] = useState<MessageDTO[]>([]);
     const messagesWrapper = useRef<HTMLDivElement>(null);
+    const [isExpanded, setIsExpanded] = useState<boolean>(true);
     const input = useRef<HTMLDivElement>(null);
+    const wrapperRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (message !== "") {
@@ -82,6 +85,9 @@ export default function ChatsView() {
                                 if (tool.name === 'canvas-show' && tool.args['svg'] && components.sideMenuRef.current) {
                                     components.sideMenuRef.current.canvas.show(tool.args['svg']);
                                 }
+                                if (tool.name === 'dashboard-build' && tool.args['html'] && components.topPanelRef.current) {
+                                    components.topPanelRef.current.setHtmlElement(tool.args['html'])
+                                }
                                 if (tool.name === 'message' && tool.args['msg']) {
                                     setMessages([
                                         ...messages,
@@ -111,10 +117,48 @@ export default function ChatsView() {
         }
     }
 
+    const toggleExpand = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const wrapper = wrapperRef.current;
+        if (!wrapper) {
+            return;
+        }
+
+        const start = wrapper.getBoundingClientRect().width;
+        const end = isExpanded ? '48px' : '450px';
+
+        wrapper.animate([{width: start}, {width: end}], {duration: 1500, fill: 'forwards'})
+        .addEventListener('finish', () => {
+            setIsExpanded(!isExpanded);
+        });
+
+        const children = wrapper.children;
+        const opEnd = isExpanded ? 0 : 1;
+        const newDisplay = isExpanded ? 'none' : '';
+        if (!isExpanded) {
+            for (let i = 1; i < children.length; i++) {
+                (children[i] as HTMLElement).style = newDisplay;
+            }
+        }
+        for (let i = 1; i < children.length; i++) {
+            children[i].animate([{opacity: getComputedStyle(children[i]).opacity}, {opacity: opEnd}], {duration: 1500, fill: 'forwards'})
+            .addEventListener('finish', () => {
+                (children[i] as HTMLElement).style.display = newDisplay;
+            })
+        }
+    }
+
     return (
-        <div className="h-full w-full overflow-y-hidden grid grid-rows-[1fr_auto] p-4 justify-items-center pt-0 pr-8 gap-8">
+        <div ref={wrapperRef} className="h-full mr-2 ml-2 w-[450px] overflow-hidden relative overflow-y-hidden grid grid-rows-[1fr_auto] pb-4 justify-items-center pt-0 gap-8">
+            <div className="absolute z-[1] left-0 top-4 cursor-pointer w-[48px] h-[48px] flex items-center justify-center hover:text-white"
+            onClick={toggleExpand}>
+                {isExpanded
+                    ? <KeyboardArrowRight className="w-[24px] h-[24px]" sx={{fontSize: '28px'}}/>
+                    : <KeyboardArrowLeft className="w-[24px] h-[24px]" sx={{fontSize: '28px'}}/> 
+                }
+            </div>
             <div ref={messagesWrapper} className="overflow-y-scroll gap-y-4 flex flex-col w-[90%] p-2 pt-8">
-                {messages.map((m, i) => {
+                {messages.map((m, i) => {                    
                     return <Message key={i} type={m.type} icon={m.src} content={m.content}/>
                     }
                 )}
@@ -123,7 +167,7 @@ export default function ChatsView() {
             <form onSubmit={async (e) => {
                 e.preventDefault();
                 await onSubmit();
-            }} className="h-[8rem] w-[65%] grid grid-cols-[1fr_auto] gap-4 items-center">
+            }} className="h-[8rem] w-[450px] grid grid-cols-[1fr_auto] gap-4 items-center">
                 <div ref={input} className="border border-primary rounded-md h-full p-1 pl-2 pr-2 outline-none"
                  onKeyDown={onKeyDown} contentEditable="true">
                 </div>

@@ -44,7 +44,7 @@ def parse_and_build_tool_call(tool_call: str) -> ToolCall:
         if tool_call[last_end] == '/' and tool_call[last_end + 1] == '>':
             break
 
-
+    print(f"Return tool call {call_obj}")
     return call_obj
 
 def parse_tool_calls(tool_calls: str) -> list[ToolCall]:

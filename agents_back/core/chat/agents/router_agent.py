@@ -51,4 +51,3 @@ class RouterAgent(AgentBase):
         return AgentResponse(
             Message(content=selected_agent, type=MessageType.AGENT_CALL, src="agent", timestamp=datetime.now()),
         )
-        

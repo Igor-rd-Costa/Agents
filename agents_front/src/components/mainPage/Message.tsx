@@ -30,9 +30,9 @@ export default function Message({type, icon, content}: MessageProps) {
         contentStyle.borderTopRightRadius = 0;
     }
 
-    const isGraphicToolCall = type === MessageType.TOOL_CALL && typeof content !== 'string' && content.length === 2;
-    if (isGraphicToolCall && content[0].name !== "message") {
-        if (content[1].name !== "message") {
+    const isGraphicToolCall = type === MessageType.TOOL_CALL && typeof content !== 'string';
+    if (isGraphicToolCall && content[0] && content[0].name && content[0].name !== "message") {
+        if (content[1] && content[1].name !== "message") {
             return;
         }
         const temp = content[0];
@@ -42,8 +42,8 @@ export default function Message({type, icon, content}: MessageProps) {
     let tool_info: null | {message: string, tool_call: ToolCall} = null;
     if (isGraphicToolCall) {
         tool_info = {
-            message: '' + content[0].args['msg'],
-            tool_call: content[1]
+            message: content[0] ? '' + (content[0].args['msg'] ?? '') : '',
+            tool_call: content[1] ?? content[0]
         };
     }
     const tool = tool_info?.tool_call;
@@ -52,7 +52,10 @@ export default function Message({type, icon, content}: MessageProps) {
             return;
         }
         if (tool.name === 'canvas-show' && tool.args['svg']) {
-            components.sideMenuRef.current?.canvas.show(tool.args['svg'])
+            components.sideMenuRef.current?.canvas.show(tool.args['svg']);
+        }
+        if (tool.name == 'dashboard-build' && tool.args['html']) {
+            components.topPanelRef.current?.setHtmlElement(tool.args['html']);
         }
     }
 
