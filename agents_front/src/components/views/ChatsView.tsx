@@ -55,6 +55,7 @@ export default function ChatsView() {
         const chatConnection = chat.getConnection();
 
         if (!chatConnection.getIsConnected()) {
+            console.log("Not connected!");
             if (!await chatConnection.connect()) {
                 return;
             }
@@ -73,7 +74,7 @@ export default function ChatsView() {
         await chatConnection.sendMessage(value, (message => {
             const data = message.getData();
             const msg = data?.data;
-            const chatDTO = data?.chat;
+            const extraData = data?.chat;
             if (msg) {
                 console.log("Got message", data);
                 if (data?.messageType === MessageType.MESSAGE) {
@@ -99,13 +100,20 @@ export default function ChatsView() {
                     });
                 }
             }
-            if (chatDTO) {
-                setChat(new Chat(
-                    chatDTO.id,
-                    chatDTO.name,
-                    chatDTO.createdAt,
-                    chatDTO.updatedAt
-                ));
+            if (extraData) {
+                const chatDTO = extraData.chat;
+                
+                if (chatDTO) {
+                    chatDTO.createdAt = new Date(chatDTO.createdAt);
+                    chatDTO.updatedAt = new Date(chatDTO.updatedAt);
+                    setChat(new Chat(
+                        chatDTO.id,
+                        chatDTO.name,
+                        chatDTO.createdAt,
+                        chatDTO.updatedAt,
+                        chatConnection
+                    ));
+                }
             }
         }));
     }
@@ -124,8 +132,8 @@ export default function ChatsView() {
             return;
         }
 
-        const start = wrapper.getBoundingClientRect().width;
-        const end = isExpanded ? '48px' : '450px';
+        const start = wrapper.getBoundingClientRect().width + 'px';
+        const end = isExpanded ? '48px' : '400px';
 
         wrapper.animate([{width: start}, {width: end}], {duration: 500, fill: 'forwards'})
         .addEventListener('finish', () => {
@@ -148,16 +156,21 @@ export default function ChatsView() {
         }
     }
 
+    const testConnection = () => {
+        const chatConnection = chat.getConnection();
+        console.log(chatConnection.testConnection());
+    }
+
     return (
-        <div ref={wrapperRef} className="h-full mr-2 ml-2 w-[450px] overflow-hidden relative overflow-y-hidden grid grid-rows-[1fr_auto] pb-4 justify-items-center pt-0 gap-8">
-            <div className="absolute z-[1] left-0 top-4 cursor-pointer w-[48px] h-[48px] flex items-center justify-center hover:text-white"
+        <div ref={wrapperRef} className="h-full w-[400px] overflow-hidden relative overflow-y-hidden grid grid-rows-[1fr_auto] pb-4 justify-items-center pt-0 gap-8">
+            <div className="absolute z-[1] left-0 cursor-pointer w-[48px] h-[48px] flex items-center justify-center hover:text-white"
             onClick={toggleExpand}>
                 {isExpanded
                     ? <KeyboardArrowRight className="w-[24px] h-[24px]" sx={{fontSize: '28px'}}/>
                     : <KeyboardArrowLeft className="w-[24px] h-[24px]" sx={{fontSize: '28px'}}/> 
                 }
             </div>
-            <div ref={messagesWrapper} className="overflow-y-scroll gap-y-4 flex flex-col w-[90%] p-2 pt-8">
+            <div ref={messagesWrapper} className="overflow-y-scroll gap-y-4 flex flex-col w-[380px] p-2 pt-8">
                 {messages.map((m, i) => {                    
                     return <Message key={i} type={m.type} icon={m.src} content={m.content}/>
                     }
@@ -167,11 +180,12 @@ export default function ChatsView() {
             <form onSubmit={async (e) => {
                 e.preventDefault();
                 await onSubmit();
-            }} className="h-[8rem] w-[450px] grid grid-cols-[1fr_auto] gap-4 items-center">
-                <div ref={input} className="border border-primary rounded-md h-full p-1 pl-2 pr-2 outline-none"
+            }} className="h-[8rem] pl-2 pr-2 w-full grid grid-cols-[1fr_auto] gap-4 items-center">
+                <div ref={input} className="border border-primary w-[300px] overflow-y-scroll rounded-md h-full p-1 pl-2 pr-2 w-full outline-none"
                  onKeyDown={onKeyDown} contentEditable="true">
                 </div>
                 <Button type="submit" variant={'contained'}>Send</Button>
+                <Button onClick={testConnection} type="button" variant={'contained'}>Test Connection</Button>
             </form>
         </div>
     )

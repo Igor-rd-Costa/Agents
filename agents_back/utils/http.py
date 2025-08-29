@@ -1,6 +1,6 @@
 from fastapi import Request, HTTPException
 
-from agents_back.core.chat.chat_system import do_chat_task, active_connections
+from agents_back.core.chat.chat_system import ChatResponse, do_chat_task, active_connections
 from agents_back.services.auth_service import AuthService
 from agents_back.services.chat_service import ChatService
 from agents_back.types.sse import SSEMessage, SSEEvent, SSEEventType, ConnectionState, SSEPingRequestData, \
@@ -33,26 +33,34 @@ async def start_connection(connection_id: str, auth_service: AuthService, chat_s
                     case SSEEvent.PING:
                         process_ping_request(message)
                     case SSEEvent.MESSAGE:
-                        yield (await process_message_request(message)).to_message_string()
+                        response: SSEMessage = await process_message_request(message)
+                        chat_response: ChatResponse = ChatResponse.model_validate_json(response.data)
+                        print(f"Got Response:\n{chat_response}")
+
+                        if chat_response.chat is not None and chat_response.chat.connection_id is not None:
+                            connection_id = chat_response.chat.connection_id
+
+                        yield response.to_message_string()
                     case _:
                         print(f"[Chat] {connection_id}: unhandled event '{message.event}'")
 
             except asyncio.TimeoutError:
-                connection_state = active_connections[connection_id]
+                connection_state = active_connections.get(connection_id)
+                if connection_state is None:
+                    continue
 
                 if len(connection_state.hanging_pings) > 2:
                     print(f"[Chat] {connection_id} pings not answered")
                     break
 
                 ping_id = str(uuid4())
-                ping_message = SSEMessage(
+                connection_state.hanging_pings.append(ping_id)
+                print(f"[Chat] {connection_id} Sending ping message")
+                yield SSEMessage(
                     id=ping_id,
                     event=SSEEvent.PING,
                     event_type=SSEEventType.REQUEST
-                )
-                connection_state.hanging_pings.append(ping_id)
-                print(f"[Chat] {connection_id} Sending ping message")
-                yield ping_message.to_message_string()
+                ).to_message_string()
     except asyncio.CancelledError:
         pass
     finally:

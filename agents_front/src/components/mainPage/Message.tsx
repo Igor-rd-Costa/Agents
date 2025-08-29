@@ -67,7 +67,7 @@ export default function Message({type, icon, content}: MessageProps) {
                     : <Person fontSize="large" color="primary"/>
                 }
             </div>
-            <div style={contentStyle} className="h-fit mt-6 p-2 pl-4 pr-4 text-[0.9rem] row-start-1 bg-[#202020FF] rounded-md shadow-[2px_2px_4px_1px_#FFF2]">
+            <div style={contentStyle} className="h-fit mt-6 p-2 pl-4 pr-4 text-[0.7rem] row-start-1 bg-[#202020FF] rounded-md shadow-[2px_2px_4px_1px_#FFF2]">
                 {isGraphicToolCall ?
                     (<div className="flex items-center gap-x-4">
                         <HardwareIcon className="cursor-pointer hover:text-primary" onClick={showToolInfo}/>

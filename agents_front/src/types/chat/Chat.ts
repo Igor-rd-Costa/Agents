@@ -8,13 +8,19 @@ export class Chat {
     private updatedAt: Date;
     private connection: ChatConnection;
 
-    public constructor(id?: string|null, name?: string, createdAt?: Date, updatedAt?: Date) {
+    public constructor(id?: string|null, name?: string, createdAt?: Date, updatedAt?: Date, currentConnection?: ChatConnection) {
         const now = new Date(Date.now());
         this.id = id ?? null;
         this.name = name ?? '';
         this.createdAt = createdAt ?? now;
         this.updatedAt = updatedAt ?? now;
-        this.connection = new ChatConnection(id ?? null);
+        if (currentConnection) {
+            this.connection = currentConnection;
+            this.connection.setChatId(id ?? null);
+            console.log("Current", currentConnection);
+        } else {
+            this.connection = new ChatConnection(id ?? null);
+        }
     }
 
     public getId() {

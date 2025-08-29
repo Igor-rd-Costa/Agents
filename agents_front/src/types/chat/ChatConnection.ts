@@ -3,29 +3,43 @@ import {SSEEventType, SSEMessage, SSEMessageData, SSERequestCallback, SSEStream,
 import {ChatDTO} from "@/types/chat/ChatDTO";
 import {MessageType} from "@/components/mainPage/Message";
 
-type ChatData = {
+export type ChatData = {
     data: string|ToolCall[],
     messageType: MessageType,
-    chat: ChatDTO|null
+    chat: {
+        chat: ChatDTO|null,
+        connectionId: string|null
+    }
 }
 
 export default class ChatConnection {
-    private isConnected: boolean = false;
     private connectionStream: SSEStream|null = null;
+    private chatId: string|null = null;
 
-    constructor(private readonly chatId: string|null) {}
+    constructor(chatId: string|null) {
+        this.chatId = chatId;
+    }
+
+    public testConnection() {
+        return {isConnected: this.getIsConnected(), stream: this.connectionStream }
+    }
 
     public getChatId() {
         return this.chatId;
     }
 
+    public setChatId(chatId: string|null) {
+        this.chatId = chatId;
+    }
+
     public getIsConnected() {
-        return this.isConnected;
+        return this.connectionStream?.getIsConnected() ?? false;
     }
 
     public async connect(): Promise<boolean> {
         return new Promise(async resolve => {
             this.connectionStream = chatService.connect(this.chatId);
+            console.log("Connection set", this.connectionStream);
             const connected = await this.connectionStream.waitConnected();
             resolve(connected);
         });

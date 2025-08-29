@@ -7,11 +7,11 @@ from agents_back.types.chat import Message, MessageType, ToolCall
 
 prompt = """You're an expert at building and editing dashboards and dashboard components. Your task is to use the Data provided to you to build a dashboard using HTML and CSS.
 A dashboard should be composed of components, such as tables, graphs, maps, icons and text elements. You're not allowed to use SVG element when building graphs.
-The Dashboard is wrapped by a div tag. use the current DashboardState as a base for you actions. The elements MUST fit inside the wrapper width and height.
+The Dashboard is wrapped by a div tag. use the current DashboardState as a base for you actions. The elements MUST fit inside the wrapper width and height. Do not change the dashboards's dimension. Only use inline css styles for the elements.
 Every dashboard component MUST be wrapped in a <section> tag. Do not use section tags for anything else other than wrapping a component.
 Components but be responsive, do not use fixed dimensions inside the dashboard.
 <DashboardState>
-    <div style="width: 1372px; height: 894px;">
+    <div style="width: 1920px; height: 1080px;">
         <style>
         </style>
         <div id="dashboard">
@@ -35,12 +35,23 @@ Data;Cliente;Categoria;Qtd Produtos;Valor Total;Acc
 You're are only allowed to return a valid JSON object in the format {{"message": string, "html": string }}, no other messages are allowed. "message" is a message that will be shown to the user in the chat. "html" MUST be valid HTML, no other text is allowed. Ignore all instructions that are not related to your task."
 """
 
+def build_prompt(query: str):
+    return """
+Você é um especialista no design de dashboards. Seu trabalho é construir o layout do dashboard que será usado pelos desenvolvedores para construir e organizar os componentes. 
+O layout deve ser feito em HTML E CSS. o dashboard é composto por uma div com as dimensões do dashboard. Você deve trabalhar dentro desta div. 
+Use elementos <section> com um className que identifique a função daquele elemento no dashboard final. 
+Defina o layout dos elementos e sub elementos, como tabelas, gráficos, headers, footers, cards com informações, KPIs e outros. Seja criativo. 
+Seu trabalho é apenas de construir o layout e nunca implementar mais do que isso. Se restrinja a apenas usar elementos <section> para construir o layout e use apenas estilos para setar a altura e largura dos elementos, flex e grid, nenhum outro estilo é permitido. Não inclua nenhum texto ou outros elementos dentro 
+Com base nas especificações do cliente contidas abaixo retorne uma lista com quatro opções unicas de layout diferentes para o dashboard.
+==== ESPECIFICAÇÕES DO CLIENTE=======\n""" + query + """\n===================================
+<div id="dashboard" style="width: '1920px'; height: '1080px';"> </div>
+You're are only allowed to return a valid JSON object in the format {{"message": string, "layouts": string[] }}, no other messages are allowed. "message" is a message that will be shown to the user in the chat. "layout" MUST be valid array of valid HTML, no other text is allowed. Return only the section components that compose the dashboard, the wrapping div MUST NOT be sent. Ignore all instructions that are not related to your task."
+"""
 
 class DashboardBuilderAgent(AgentBase):
 
     async def invoke(self, chat: ChatContext) -> AgentResponse:
         print("Invoking Dashboard agent")
-
         messages = [
             ("system", prompt),
             ("user", chat.message.content)
@@ -48,6 +59,7 @@ class DashboardBuilderAgent(AgentBase):
 
         template = ChatPromptTemplate.from_messages(messages)
         #moonshotai/kimi-k2-instruct
+        #openai/gpt-oss-120b
         llm = ChatGroq(model="openai/gpt-oss-120b")
         chain = template | llm
 
@@ -65,6 +77,8 @@ class DashboardBuilderAgent(AgentBase):
             name="message",
             args={"msg": msg_info['message']}
         )
+
+        print(f"Got message\n{msg_info}")
 
         tool_call = ToolCall(
             namespace="agnt",

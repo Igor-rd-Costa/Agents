@@ -1,5 +1,6 @@
 import {Dispatcher} from "undici-types";
 import HttpMethod = Dispatcher.HttpMethod;
+import { ChatData } from "./chat/ChatConnection";
 
 export type ToolCall = {
     name: string,
@@ -197,6 +198,7 @@ export class SSEStream {
                 const decodedVal = decoder.decode(value);
                 if (done) {
                     console.log("DONEEEEEEE!");
+                    this.isConnected = false;
                     break;
                 }
 
@@ -209,6 +211,8 @@ export class SSEStream {
 
                 if (sseMessage.getEvent() === 'connect') {
                     this.connectionId = sseMessage.getData() ?? null;
+                    console.log("Connecting", sseMessage, this.connectionId);
+                    this.isConnected = true;
                     resolveConnect(this.connectionId !== null);
                 }
 
@@ -240,6 +244,13 @@ export class SSEStream {
                         if (sseMessage.getEventType() === SSEEventType.NOTIFICATION) {
                             break;
                         }
+                        if (sseMessage.getData()) {
+                            const connectionId = (sseMessage as unknown as SSEMessage<ChatData>).getData()?.chat?.connectionId;
+                            if (typeof connectionId === 'string') {
+                                console.log("Updated Id", connectionId);
+                                this.connectionId = connectionId;
+                            }
+                        }
                         const msgId = sseMessage.getId();
                         const listeners = this.responseListeners[msgId];
                         if (listeners) {
@@ -264,6 +275,10 @@ export class SSEStream {
 
     public getConnectionId() {
         return this.connectionId;
+    }
+
+    public getIsConnected() {
+        return this.isConnected;
     }
 
     public async send<T, U = T>(message: SSEMessage<T>, callback?: SSERequestCallback<U>): Promise<SSEMessage<U>> {
