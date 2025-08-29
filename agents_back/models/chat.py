@@ -7,11 +7,11 @@ from datetime import datetime
 
 class Chat(BaseModel):
     id: Optional[ObjectId] = Field(default_factory=ObjectId)
-    user_id: ObjectId
-    members_id: Optional[ObjectId]
+    user_id: ObjectId = Field(alias="userId")
+    members_id: Optional[ObjectId] = Field(alias='membersId')
     name: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime = Field(alias='createdAt')
+    updated_at: datetime = Field(alias='updatedAt')
 
     model_config = {
         "populate_by_name": True,

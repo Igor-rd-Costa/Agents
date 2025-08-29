@@ -6,6 +6,8 @@ import AppContext, { AppView } from "@/contexes/appContext";
 import { ChatDTO } from "@/types/chat/ChatDTO";
 import { Chat } from "@/types/chat/Chat";
 
+const chatsSortFn = (a: ChatDTO, b: ChatDTO) => b.updatedAt.getTime() - a.updatedAt.getTime();
+
 export function TalksChildren() {
     const { chatContext, viewContext } = useContext(AppContext);
     const [ chats, setChats ] = useState<ChatDTO[]>([]);
@@ -13,14 +15,14 @@ export function TalksChildren() {
     useEffect(() => {
         if (viewContext.view === AppView.CHATS) {
             chatContext.chatService.getChats().then(c => {
-                setChats(c)
+                setChats(c.sort(chatsSortFn))
             });
         }
     }, [viewContext.view]);
 
     useEffect(() => {
         if (chatContext.chat.getId() !== null && chats.filter(c => c.id === chatContext.chat.getId()).length === 0) {
-            setChats([...chats, chatContext.chat.toChatDTO()]);
+            setChats([...chats, chatContext.chat.toChatDTO()].sort(chatsSortFn));
         }
     }, [chatContext.chat]);
 
@@ -47,7 +49,7 @@ export function TalksChildren() {
         }
 
         if (await chatContext.chatService.deleteChat(chatId)) {
-            setChats(chats.filter(c => c.id !== chatId));
+            setChats(chats.filter(c => c.id !== chatId).sort(chatsSortFn));
             if (chatContext.chat.getId() === chatId) {
                 chatContext.setChat(new Chat());
             }

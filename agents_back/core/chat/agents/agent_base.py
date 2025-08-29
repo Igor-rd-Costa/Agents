@@ -1,4 +1,3 @@
-from curses import raw
 from datetime import datetime
 from pydantic import BaseModel
 from agents_back.models.chat import Chat

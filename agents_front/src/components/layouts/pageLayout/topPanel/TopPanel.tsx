@@ -33,7 +33,7 @@ const TopPanel = forwardRef<TopPanelRef>(({}, ref) => {
     useEffect(() => {
         if (htmlElement !== null && sectionRef.current) {
             sectionRef.current.innerHTML = htmlElement;
-            buildDashboard();
+            //buildDashboard();
         }
     }, [htmlElement])
 

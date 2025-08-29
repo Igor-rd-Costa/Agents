@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.params import Query
 from agents_back.services.auth_service import AuthService, get_auth_service
 from agents_back.services.chat_service import ChatService, get_chat_service
-from agents_back.types.chat import DeleteChatDTO, ToolCall
+from agents_back.types.chat import DeleteChatDTO
 from agents_back.types.general import ObjectId
 from starlette.responses import StreamingResponse
 from agents_back.types.sse import SSEMessage, SSEEvent

@@ -19,8 +19,12 @@ export class ChatService {
     }
 
     public async getChats(): Promise<ChatDTO[]> {
-        const {data} = await axios.get(`${this.backend}`, {withCredentials: true});
-        return data;
+        const {data} = await axios.get<ChatDTO[]>(`${this.backend}`, {withCredentials: true});
+        return data.map(chat => {
+            chat.createdAt = new Date(chat.createdAt);
+            chat.updatedAt = new Date(chat.updatedAt);
+            return chat;
+        });
     }
 
     public async getMessages(chatId: string) {

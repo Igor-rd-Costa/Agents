@@ -127,7 +127,7 @@ export default function ChatsView() {
         const start = wrapper.getBoundingClientRect().width;
         const end = isExpanded ? '48px' : '450px';
 
-        wrapper.animate([{width: start}, {width: end}], {duration: 1500, fill: 'forwards'})
+        wrapper.animate([{width: start}, {width: end}], {duration: 500, fill: 'forwards'})
         .addEventListener('finish', () => {
             setIsExpanded(!isExpanded);
         });
@@ -141,7 +141,7 @@ export default function ChatsView() {
             }
         }
         for (let i = 1; i < children.length; i++) {
-            children[i].animate([{opacity: getComputedStyle(children[i]).opacity}, {opacity: opEnd}], {duration: 1500, fill: 'forwards'})
+            children[i].animate([{opacity: getComputedStyle(children[i]).opacity}, {opacity: opEnd}], {duration: 300, fill: 'forwards'})
             .addEventListener('finish', () => {
                 (children[i] as HTMLElement).style.display = newDisplay;
             })
