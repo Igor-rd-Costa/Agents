@@ -55,7 +55,7 @@ export default function Message({type, icon, content}: MessageProps) {
             components.sideMenuRef.current?.canvas.show(tool.args['svg']);
         }
         if (tool.name == 'dashboard-build' && tool.args['html']) {
-            components.topPanelRef.current?.setHtmlElement(tool.args['html']);
+            //components.dashboardPanelRef.current?.setHtmlElement(tool.args['html']);
         }
     }
 

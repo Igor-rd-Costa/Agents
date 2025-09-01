@@ -38,7 +38,6 @@ export default function DashboardComponent({ id, className, inlineStyle, html}: 
           if (rule.trim()) {
             const [property, value] = rule.split(':').map(s => s.trim());
             if (property && value) {
-              // Convert kebab-case to camelCase
               const camelProperty = property.replace(/-([a-z])/g, (match, letter) => 
                 letter.toUpperCase()
               );

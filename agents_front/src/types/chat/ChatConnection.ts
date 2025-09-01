@@ -20,10 +20,6 @@ export default class ChatConnection {
         this.chatId = chatId;
     }
 
-    public testConnection() {
-        return {isConnected: this.getIsConnected(), stream: this.connectionStream }
-    }
-
     public getChatId() {
         return this.chatId;
     }

@@ -13,11 +13,11 @@ export function TalksChildren() {
     const [ chats, setChats ] = useState<ChatDTO[]>([]);
 
     useEffect(() => {
-        if (viewContext.view === AppView.CHATS) {
-            chatContext.chatService.getChats().then(c => {
-                setChats(c.sort(chatsSortFn))
-            });
-        }
+        //if (viewContext.view === AppView.CHATS) {
+        //    chatContext.chatService.getChats().then(c => {
+        //        setChats(c.sort(chatsSortFn))
+        //    });
+        //}
     }, [viewContext.view]);
 
     useEffect(() => {

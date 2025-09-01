@@ -5,7 +5,7 @@ from agents_back.services import chat_service
 from agents_back.types.chat import Message, MessageType
 from agents_back.utils.tools import parse_tool_calls
 from agents_back.utils.utils import services_context
-from agents_back.utils.agents import chat_messages_to_agent_message
+from agents_back.utils.agents import chat_messages_to_agent_message, get_agent_model, AgentModel
 from agents_back.core.chat.agents.agent_base import AgentBase, AgentResponse, ChatContext
 
 base_prompt = """You're a friendly assistant. Your task is to help the user with his question usings your knowledge and the tools you have available. Use the
@@ -69,7 +69,10 @@ class GeneralAgent(AgentBase):
         messages.append(("user", chat.message.content))
 
         template = ChatPromptTemplate.from_messages(messages)
-        llm = ChatGroq(model="llama-3.3-70b-versatile")
+        llm = get_agent_model(AgentModel.OPENAI_4o_MINI)
+        if llm is None:
+            print(f"[Chat] Invalid LLM.")
+            llm = ChatGroq(model="openai/gpt-oss-120b")
         chain = template | llm
 
         tokens = []

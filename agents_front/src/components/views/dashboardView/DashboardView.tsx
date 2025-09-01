@@ -1,29 +1,30 @@
-import DashboardComponent from "@/components/dashboard/DashboardComponent";
+'use client'
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import DashboardComponent from "@/components/views/dashboardView/components/DashboardComponent";
 
-export type TopPanelRef = {
+export type DashboardViewRef = {
     setHtmlElement: (element: string|null) => void
 };
 
-const TopPanel = forwardRef<TopPanelRef>(({}, ref) => {
+const DashboardView = forwardRef<DashboardViewRef>(({}, ref) => {
     const sectionRef = useRef<HTMLElement>(null);
-    const [ htmlElement, setHtmlElement ] = useState<string|null>(null);
+    const dashboardWrapperRef = useRef<HTMLDivElement>(null);
+    const [ htmlElement, setHtmlElement ] = useState<string|string[]|null>(null);
 
     const buildDashboard = () => {
         console.log("Here", sectionRef.current);
-        if (!sectionRef.current) {
+        if (!sectionRef.current || !sectionRef.current.firstElementChild) {
             return;
         }
 
-        const wrapper = sectionRef.current.querySelector('#dashboard') ?? sectionRef.current.firstElementChild!;
+        const wrapper = sectionRef.current.firstElementChild
         wrapper.id = "dashboard";
         if (!wrapper) {
             return;
         }
         const root = createRoot(wrapper);
         const elements = [];
-        const styles = wrapper.querySelectorAll('style')
         for (let i = 0; i < wrapper.children.length; i++) {
             const section = wrapper.children[i] as HTMLElement;
             if (section.nodeName === 'SECTION') {
@@ -32,22 +33,12 @@ const TopPanel = forwardRef<TopPanelRef>(({}, ref) => {
             }
         }
         root.render(elements);
-        setTimeout(() => {
-            let styleStr = "";
-            styles.forEach(style => {
-                styleStr += style.innerHTML;
-            });
-            console.log("Strings", styleStr);
-            const el = document.createElement('style');
-            el.innerText = styleStr;
-            wrapper.appendChild(el);
-        })
     }
 
     useEffect(() => {
         if (htmlElement !== null && sectionRef.current) {
             loadLayout(0);
-            buildDashboard();
+            //buildDashboard();
         }
     }, [htmlElement])
 
@@ -58,27 +49,36 @@ const TopPanel = forwardRef<TopPanelRef>(({}, ref) => {
     });
 
     const loadLayout = (index: number) => {
-        if (!htmlElement || !sectionRef.current) {
+        if (!htmlElement || !dashboardWrapperRef.current) {
             return;
         }
-        sectionRef.current.innerHTML = typeof htmlElement === 'string' ? htmlElement : htmlElement[index];
-        if (typeof htmlElement !== 'string') {
-            sectionRef.current.style.width = '1920px';
-            sectionRef.current.style.height = '1080px';
-            sectionRef.current.id = 'dashboard';
-            const style = document.createElement('style');
-            style.textContent = `
-            #dashboard section {
-                border: 1px solid white;
-            }`;
-            sectionRef.current.appendChild(style);
+        const isDashboardLayout = typeof htmlElement !== 'string';
+        const target = dashboardWrapperRef.current;
+        console.log("Target", target);
+        target.innerHTML = isDashboardLayout ? htmlElement[index] : htmlElement;
+        console.log("Html", htmlElement);
+        const borderColor = isDashboardLayout ? 'white' : 'transparent';
+        target.style.width = '1920px';
+        target.style.height = '1080px';
+        target.id = 'dashboard';
+        const style = document.createElement('style');
+        style.textContent = `
+        #dashboard section {
+            border: 1px solid ${borderColor};
+        }`;
+        target.appendChild(style);
+        const child = target.firstElementChild;
+        if (child && child.nodeName === 'DIV' && child.id === 'dashboard') {
+            target.innerHTML = child.innerHTML;
         }
     }
 
     return (
-        <div>
-            <section ref={sectionRef} className="h-[95%] bg-[#333] overflow-scroll">
-                <div className="border w-[1920px] h-[1080px]"></div>
+        <>
+            <section ref={sectionRef} className="h-full w-full bg-[#2A2A2A] p-8 overflow-scroll">
+                <div className="rounded-[1rem] shadow-[0px_0px_20px_-2px_#0005] bg-[#0002] w-[1930px] h-[1090px] flex items-center justify-center">
+                    <div ref={dashboardWrapperRef} className="bg-[#333] w-[1920px] h-[1080px]"></div>
+                </div>
             </section>
             { (htmlElement && typeof htmlElement !== 'string') && (
                 <div className="h-[2rem] flex gap-x-2 mt-4 z-[10]">    
@@ -88,9 +88,9 @@ const TopPanel = forwardRef<TopPanelRef>(({}, ref) => {
                     <button className="border w-[5rem] cursor-pointer" onClick={() => loadLayout(3)}>4</button>
                 </div>)
             }
-        </div>
+        </>
     )
 });
-TopPanel.displayName = "TopPanel";
+DashboardView.displayName = "DashboardView";
 
-export default TopPanel;
+export default DashboardView;

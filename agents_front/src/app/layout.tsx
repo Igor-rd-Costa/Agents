@@ -13,7 +13,8 @@ import AppContext, {AppContextType, AppView} from "@/contexes/appContext";
 import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
 import {useRouter} from "next/navigation";
 import {Chat} from "@/types/chat/Chat";
-import { TopPanelRef } from "@/components/layouts/pageLayout/topPanel/TopPanel";
+import dashboardService from "@/services/DashboardService";
+import {DashboardDTO} from "@/types/dashboard";
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -28,11 +29,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const [ user, setUser ] = useState<User|null>(null);
-  const [ view, setView ] = useState<AppView>(AppView.CHATS);
+  const [ view, setView ] = useState<AppView>(AppView.DASHBOARDS);
   const [ chat, setChat ] = useState<Chat>(new Chat());
+  const [ dashboard, setDashboard ] = useState<DashboardDTO>(null);
   const [ mcp, setMcp ] = useState<any>({});
   const [ sideMenuRef, setSideMenuRef ] = useState<RefObject<SideMenuRef|null>>({current: null});
-  const [ topPanelRef, setTopPanelRef ] = useState<RefObject<TopPanelRef|null>>({current: null});
   const router = useRouter();
 
   useEffect(() => {
@@ -58,6 +59,11 @@ export default function RootLayout({
       view,
       setView
     },
+    dashboardContext: {
+      dashboard,
+      setDashboard,
+      dashboardService: dashboardService
+    },
     chatContext: {
       chat,
       setChat,
@@ -70,9 +76,7 @@ export default function RootLayout({
     },
     components: {
       sideMenuRef,
-      setSideMenuRef,
-      topPanelRef,
-      setTopPanelRef
+      setSideMenuRef
     }
   }
 

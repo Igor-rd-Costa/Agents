@@ -18,23 +18,31 @@ import NavBar, {
     NavBarView
 } from "@/components/layouts/pageLayout/sideMenu/components/NavBar";
 import ChatIcon from "@mui/icons-material/Chat";
-import SmartToyIcon from "@mui/icons-material/SmartToy";
-import HardwareIcon from "@mui/icons-material/Hardware";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import BrushIcon from "@mui/icons-material/Brush";
 import AppContext, {AppView} from "@/contexes/appContext";
-import {TalksChildren} from "@/components/layouts/pageLayout/sideMenu/components/TalksChildren";
+import ChatView from "@/components/layouts/pageLayout/sideMenu/components/ChatView";
+import DashboardsView from "@/components/layouts/pageLayout/sideMenu/components/DashboardsView";
 
 export type SideMenuRef = {
     isExpanded: boolean,
     toggleExpand: (view: AppView, expanded?: boolean) => void,
+    getWidth: () => number,
+    setWidth: (width: number) => void,
     canvas: {
         show: (svg: string) => void
     }
 }
 
-export const sideMenuCanvasWidth = 384;
+export type SideMenuProps = {
+    expandedWidth: number,
+    isExpanded: boolean,
+    setIsExpanded: (val: boolean) => void
+}
 
-const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
+const EmptyView = () => <></>;
+
+const SideMenu = forwardRef<SideMenuRef, SideMenuProps>(({ isExpanded, setIsExpanded, expandedWidth }, ref) => {
     const { authContext, viewContext } = useContext(AppContext);
 
     const sectionRef = useRef<HTMLElement>(null);
@@ -45,32 +53,26 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
     const canvasDisplayRef = useRef<HTMLDivElement>(null);
     const contentWrapperRef = useRef<HTMLDivElement>(null);
 
-    const [isExpanded, setIsExpanded] = useState<boolean>(true);
     const [navBarView, setNavBarView] = useState<NavBarView>(isExpanded ? 'horz' : 'vert');
     const [canvasDisplay, setCanvasDisplay] = useState<string|null>(null);
 
     const navBarItems: NavBarItemInfo[] = useMemo(() => {
         return [
             {
+              title: 'Dashboards',
+              icon: <DashboardIcon/>,
+              view: AppView.DASHBOARDS
+            },
+            {
                 title: 'Conversas',
                 icon: <ChatIcon/>,
-                view: AppView.CHATS
+                view: AppView.CHAT
             },
             {
                 title: 'Canvas',
                 icon: <BrushIcon/>,
                 view: AppView.CANVAS,
                 disabled: canvasDisplay === null,
-            },
-            {
-                title: 'Agentes',
-                icon: <SmartToyIcon/>,
-                view: AppView.AGENTS
-            },
-            {
-                title: 'MCP',
-                icon: <HardwareIcon/>,
-                view: AppView.MCP
             },
         ];
     }, [viewContext.view, canvasDisplay]);
@@ -101,9 +103,7 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
         const contentWrapper = contentWrapperRef.current;
         const wrapper = sectionRef.current;
         const animationTiming = 150;
-        const newWidth = expanded
-            ? view === AppView.CANVAS ? sideMenuCanvasWidth : 256
-            : 48;
+        const newWidth = expanded ? expandedWidth : 48;
         const currentContentDisplay = getComputedStyle(contentWrapper).opacity;
         const newContentDisplay = expanded ? '1' : '0';
 
@@ -112,22 +112,22 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
             menuAnimation.current.cancel();
         }
 
-        setIsExpanded(expanded)
-        sessionStorage.setItem('side-menu-isExpanded', String(expanded));
+        setIsExpanded(expanded);
 
         if (expansionChange) {
             navBarRef.current?.hide(animationTiming);
         }
 
         const currentWidth = wrapper.getBoundingClientRect().width;
+        wrapper.style.width = `${currentWidth}px`;
         const contentAnimationBreakpoints = [{opacity: currentContentDisplay}, {opacity: newContentDisplay}];
         const contentAnimationParams: KeyframeAnimationOptions = {duration: animationTiming, fill: 'forwards'};
-
+        
         if (expansionChange && !expanded) {
             contentWrapper.animate(contentAnimationBreakpoints, contentAnimationParams)
-                .addEventListener('finish', () => {
-                    contentWrapper.style.display = 'none';
-                });
+            .addEventListener('finish', () => {
+                contentWrapper.style.display = 'none';
+            });
         }
 
         menuAnimation.current = wrapper.animate(
@@ -166,6 +166,22 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
     useImperativeHandle(ref, () => ({
         isExpanded,
         toggleExpand,
+        getWidth: () => {
+          return sectionRef.current?.getBoundingClientRect().width ?? 0;
+        },
+        setWidth: (width: number) => {
+            if (sectionRef.current) {
+                if (menuAnimation.current) {
+                    menuAnimation.current.commitStyles();
+                    menuAnimation.current.cancel();
+                    menuAnimation.current = null;
+                }
+                
+                
+                // Set width with higher specificity
+                sectionRef.current.style.setProperty('width', `${width}px`, 'important');
+            }
+        },
         canvas: {
             show: canvasShow
         }
@@ -174,32 +190,44 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
     const initialStyles = useMemo(() => {
         return {
             section: {
-              width: isExpanded ? '256px' : '48px'
+              width: isExpanded ? expandedWidth : '48px'
             },
             navBarWrapper: {
                 display: isExpanded ? 'flex' : 'grid',
                 gridTemplateRows: isExpanded ? '48px' : '48px 1fr'
+            },
+            contentWrapper: {
+                display: isExpanded ? 'block' : 'hidden',
+                opacity: isExpanded ? '1' : '0'
             }
         };
     }, []);
 
+    const View = useMemo(() => {
+        switch (viewContext.view) {
+            case AppView.CHAT: return ChatView;
+            case AppView.DASHBOARDS: return DashboardsView;
+            default: return EmptyView;
+        }
+    }, [viewContext.view])
+
     return (
-        <section ref={sectionRef} style={initialStyles.section}  className="bg-[#151515] text-[#DDD] h-full">
-            <div className="h-fit w-full grid grid-cols-1 gap-y-12 grid-rows-[auto_1fr]">
+        <section ref={sectionRef} style={initialStyles.section} className={`bg-[#151515] text-[#DDD] h-full`}>
+            <div className="h-full w-full grid grid-cols-1 gap-y-4 grid-rows-[auto_1fr]">
                 <div style={initialStyles.navBarWrapper} ref={navBarWrapperRef} className="grid-cols-1">
+                    <button ref={expandButtonRef} type="button" className="flex items-center justify-center col-start-1 row-start-1
+                    justify-self-start
+                    hover:text-white cursor-pointer w-[48px] h-[48px]" onClick={() => toggleExpand(viewContext.view)}>
+                        {isExpanded
+                            ? <ArrowRightIcon className="h-[24px] w-[24px]"/>
+                            : <ArrowLeftIcon className="h-[24px] w-[24px]"/>
+                        }
+                    </button>
                     <div className="w-full overflow-x-hidden">
                         <NavBar ref={navBarRef} view={navBarView} items={navBarItems} onNavigate={async (view) => {
                             toggleExpand(view, true);
                         }}/>
                     </div>
-                    <button ref={expandButtonRef} type="button" className="flex items-center justify-center col-start-1 row-start-1
-                    justify-self-end
-                    hover:text-white cursor-pointer w-[48px] h-[48px]" onClick={() => toggleExpand(viewContext.view)}>
-                        {isExpanded
-                            ? <ArrowLeftIcon className="h-[24px] w-[24px]"/>
-                            : <ArrowRightIcon className="h-[24px] w-[24px]"/>
-                        }
-                    </button>
                 </div>
 
                 {isExpanded ?? (
@@ -222,12 +250,8 @@ const SideMenu = forwardRef<SideMenuRef>(({}, ref) => {
                         </div>
                     </>
                 )}
-                <div ref={contentWrapperRef} className="w-full">
-                    {viewContext.view === AppView.CHATS ?
-                        <TalksChildren/>
-                        : <></>
-                    }
-                    <div ref={canvasDisplayRef} style={{width: `${sideMenuCanvasWidth}px`, height: `${sideMenuCanvasWidth}px`, display: 'none'}} className="p-4"></div>
+                <div ref={contentWrapperRef} style={initialStyles.contentWrapper} className="w-full h-full pl-4 pr-4 font-mono">
+                    <View/>
                 </div>
             </div>
         </section>

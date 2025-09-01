@@ -6,10 +6,13 @@ Requires-Python: >=3.12
 Description-Content-Type: text/markdown
 Requires-Dist: bcrypt>=4.3.0
 Requires-Dist: fastapi>=0.116.0
+Requires-Dist: langchain-anthropic>=0.3.19
 Requires-Dist: langchain-core>=0.3.68
+Requires-Dist: langchain-google-genai>=2.1.10
 Requires-Dist: langchain-groq>=0.3.5
 Requires-Dist: langchain-huggingface>=0.3.0
 Requires-Dist: langchain-mongodb>=0.6.2
+Requires-Dist: langchain-openai>=0.3.28
 Requires-Dist: mcp[cli]>=1.11.0
 Requires-Dist: motor>=3.7.1
 Requires-Dist: passlib>=1.7.4

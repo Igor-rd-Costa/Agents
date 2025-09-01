@@ -5,10 +5,12 @@ import mcpService, {MCPService} from "@/services/MCPService";
 import {User} from "@/types/auth";
 import {Chat} from "@/types/chat/Chat";
 import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
-import { TopPanelRef } from "@/components/layouts/pageLayout/topPanel/TopPanel";
+import dashboardService, {DashboardService} from "@/services/DashboardService";
+import {DashboardDTO} from "@/types/dashboard";
 
 export enum AppView {
-    CHATS,
+    CHAT,
+    DASHBOARDS,
     AGENTS,
     MCP,
     CANVAS
@@ -26,6 +28,12 @@ type ViewContextType = {
     setView: (view: AppView) => void
 }
 
+type DashboardContextType ={
+    dashboard: DashboardDTO|null,
+    setDashboard: (dashboard: DashboardDTO|null) => void,
+    dashboardService: DashboardService
+}
+
 type ChatContextType = {
     chat: Chat,
     setChat: (chat: Chat) => void,
@@ -41,14 +49,13 @@ type MCPContextType = {
 type ComponentsContextType = {
     sideMenuRef: React.RefObject<SideMenuRef|null>,
     setSideMenuRef: (ref: React.RefObject<SideMenuRef|null>) => void
-    topPanelRef: React.RefObject<TopPanelRef|null>,
-    setTopPanelRef: (ref: React.RefObject<TopPanelRef|null>) => void
 }
 
 
 export type AppContextType = {
     authContext: AuthContextType,
     viewContext: ViewContextType,
+    dashboardContext: DashboardContextType,
     chatContext: ChatContextType,
     mcpContext: MCPContextType,
     components: ComponentsContextType
@@ -61,8 +68,13 @@ const defaultAppContext: AppContextType = {
         authService: authService
     },
     viewContext: {
-        view: AppView.CHATS,
+        view: AppView.DASHBOARDS,
         setView: () => {}
+    },
+    dashboardContext: {
+        dashboard: null,
+        setDashboard: () => {},
+        dashboardService: dashboardService
     },
     chatContext: {
         chat: new Chat(),
@@ -76,9 +88,7 @@ const defaultAppContext: AppContextType = {
     },
     components: {
         sideMenuRef: {current: null},
-        setSideMenuRef: () => {},
-        topPanelRef: {current: null},
-        setTopPanelRef: () => {}
+        setSideMenuRef: () => {}
     }
 }
 

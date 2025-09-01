@@ -4,10 +4,12 @@ from langchain_groq.chat_models import ChatGroq
 from langchain_core.prompts.chat import ChatPromptTemplate
 from agents_back.core.chat.agents.agent_base import AgentBase, AgentResponse, ChatContext
 from agents_back.types.chat import Message, MessageType, ToolCall
+from agents_back.utils.agents import get_agent_model, AgentModel
 
 prompt = """You're an expert at building and editing dashboards and dashboard components. Your task is to use the Data provided to you to build a dashboard using HTML and CSS.
 A dashboard should be composed of components, such as tables, graphs, maps, icons and text elements. You're not allowed to use SVG element when building graphs.
-The Dashboard is wrapped by a div tag. use the current DashboardState as a base for you actions. The elements MUST fit inside the wrapper width and height. Do not change the dashboards's dimension. Only use inline css styles for the elements.
+The Dashboard is wrapped by a div tag. use the current DashboardState as a base for you actions. The elements MUST fit inside the wrapper width and height. Do not change the dashboards's dimension. 
+You MUST use inline css styles for the elements, do not use <style> tags. 
 Every dashboard component MUST be wrapped in a <section> tag. Do not use section tags for anything else other than wrapping a component.
 Components but be responsive, do not use fixed dimensions inside the dashboard.
 <DashboardState>
@@ -58,9 +60,12 @@ class DashboardBuilderAgent(AgentBase):
         ]
 
         template = ChatPromptTemplate.from_messages(messages)
-        #moonshotai/kimi-k2-instruct
-        #openai/gpt-oss-120b
-        llm = ChatGroq(model="openai/gpt-oss-120b")
+
+        llm = get_agent_model(AgentModel.OPENAI_4o_MINI)
+        if llm is None:
+            print(f"[Chat] Invalid LLM.")
+            llm = ChatGroq(model="openai/gpt-oss-120b")
+
         chain = template | llm
 
         tokens = []
