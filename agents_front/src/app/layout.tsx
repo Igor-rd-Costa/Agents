@@ -14,7 +14,7 @@ import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
 import {useRouter} from "next/navigation";
 import {Chat} from "@/types/chat/Chat";
 import dashboardService from "@/services/DashboardService";
-import {DashboardDTO} from "@/types/dashboard";
+import {Dashboard} from "@/types/dashboard";
 
 const roboto = Roboto({
   weight: ['300', '400', '500', '700'],
@@ -31,9 +31,10 @@ export default function RootLayout({
   const [ user, setUser ] = useState<User|null>(null);
   const [ view, setView ] = useState<AppView>(AppView.DASHBOARDS);
   const [ chat, setChat ] = useState<Chat>(new Chat());
-  const [ dashboard, setDashboard ] = useState<DashboardDTO>(null);
+  const [ dashboard, setDashboard ] = useState<Dashboard>(new Dashboard());
   const [ mcp, setMcp ] = useState<any>({});
   const [ sideMenuRef, setSideMenuRef ] = useState<RefObject<SideMenuRef|null>>({current: null});
+  const [ activeViewRef, setActiveViewRef ] = useState<RefObject<any|null>>({current: null});
   const router = useRouter();
 
   useEffect(() => {
@@ -76,7 +77,9 @@ export default function RootLayout({
     },
     components: {
       sideMenuRef,
-      setSideMenuRef
+      setSideMenuRef,
+      activeViewRef,
+      setActiveViewRef
     }
   }
 

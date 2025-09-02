@@ -250,7 +250,7 @@ const SideMenu = forwardRef<SideMenuRef, SideMenuProps>(({ isExpanded, setIsExpa
                         </div>
                     </>
                 )}
-                <div ref={contentWrapperRef} style={initialStyles.contentWrapper} className="w-full h-full pl-4 pr-4 font-mono">
+                <div ref={contentWrapperRef} style={initialStyles.contentWrapper} className="w-full h-full font-mono">
                     <View/>
                 </div>
             </div>

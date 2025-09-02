@@ -6,7 +6,8 @@ import {User} from "@/types/auth";
 import {Chat} from "@/types/chat/Chat";
 import {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
 import dashboardService, {DashboardService} from "@/services/DashboardService";
-import {DashboardDTO} from "@/types/dashboard";
+import {Dashboard, DashboardDTO} from "@/types/dashboard";
+import { DashboardViewRef } from "@/components/views/dashboardView/DashboardView";
 
 export enum AppView {
     CHAT,
@@ -29,8 +30,8 @@ type ViewContextType = {
 }
 
 type DashboardContextType ={
-    dashboard: DashboardDTO|null,
-    setDashboard: (dashboard: DashboardDTO|null) => void,
+    dashboard: Dashboard,
+    setDashboard: (dashboard: Dashboard) => void,
     dashboardService: DashboardService
 }
 
@@ -48,7 +49,9 @@ type MCPContextType = {
 
 type ComponentsContextType = {
     sideMenuRef: React.RefObject<SideMenuRef|null>,
-    setSideMenuRef: (ref: React.RefObject<SideMenuRef|null>) => void
+    setSideMenuRef: (ref: React.RefObject<SideMenuRef|null>) => void,
+    activeViewRef: React.RefObject<any|null>,
+    setActiveViewRef: (ref: React.RefObject<any|null>) => void
 }
 
 
@@ -72,7 +75,7 @@ const defaultAppContext: AppContextType = {
         setView: () => {}
     },
     dashboardContext: {
-        dashboard: null,
+        dashboard: new Dashboard(),
         setDashboard: () => {},
         dashboardService: dashboardService
     },
@@ -88,7 +91,9 @@ const defaultAppContext: AppContextType = {
     },
     components: {
         sideMenuRef: {current: null},
-        setSideMenuRef: () => {}
+        setSideMenuRef: () => {},
+        activeViewRef: {current: null},
+        setActiveViewRef: () => {}
     }
 }
 

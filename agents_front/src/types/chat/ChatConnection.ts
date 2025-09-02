@@ -14,18 +14,18 @@ export type ChatData = {
 
 export default class ChatConnection {
     private connectionStream: SSEStream|null = null;
-    private chatId: string|null = null;
+    private dashboardId: string|null = null;
 
-    constructor(chatId: string|null) {
-        this.chatId = chatId;
+    constructor(dashboardId: string|null) {
+        this.dashboardId = dashboardId;
     }
 
-    public getChatId() {
-        return this.chatId;
+    public getDashboardId() {
+        return this.dashboardId;
     }
 
-    public setChatId(chatId: string|null) {
-        this.chatId = chatId;
+    public setDashboardId(dashboardId: string|null) {
+        this.dashboardId = dashboardId;
     }
 
     public getIsConnected() {
@@ -34,8 +34,7 @@ export default class ChatConnection {
 
     public async connect(): Promise<boolean> {
         return new Promise(async resolve => {
-            this.connectionStream = chatService.connect(this.chatId);
-            console.log("Connection set", this.connectionStream);
+            this.connectionStream = chatService.connect(this.dashboardId);
             const connected = await this.connectionStream.waitConnected();
             resolve(connected);
         });
@@ -58,11 +57,5 @@ export default class ChatConnection {
             new SSEMessageData<string>(conId, message),
             true
         ), callback)
-    }
-
-    private throwOnNullChatId() {
-        if (this.chatId === null) {
-            throw new Error("ChatConnection is not linked to a chat");
-        }
     }
 }

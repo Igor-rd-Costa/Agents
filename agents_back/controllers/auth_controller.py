@@ -9,7 +9,10 @@ from agents_back.services.auth_service import get_auth_service, AuthService
 router = APIRouter(prefix="/auth")
 
 @router.get("")
-async def get_logged_user(request: Request, auth_service: AuthService = Depends(get_auth_service)):
+async def get_logged_user(
+    request: Request, 
+    auth_service: AuthService = Depends(get_auth_service)
+):
     user = await auth_service.get_current_user(request)
     return UserDTO(**user.model_dump(exclude={"password", "normalizedEmail"}))
 
@@ -27,7 +30,7 @@ async def login(info: LoginDTO, response: Response, auth_service: AuthService = 
         httponly=False,
         secure=False,
         max_age=3600,
-        samesite="Lax"
+        samesite="Lax",
     )
     return user
 
@@ -40,8 +43,8 @@ async def register(user: RegisterDTO, response: Response, auth_service: AuthServ
         key="auth_token",
         value=token.access_token,
         httponly=False,
-        secure=True,
+        secure=False,
         max_age=3600,
-        samesite="none"
+        samesite="Lax"
     )
     return registered_user

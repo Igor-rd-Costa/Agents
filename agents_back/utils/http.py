@@ -2,13 +2,12 @@ from fastapi import Request, HTTPException
 
 from agents_back.core.chat.chat_system import ChatResponse, do_chat_task, active_connections
 from agents_back.services.auth_service import AuthService
-from agents_back.services.chat_service import ChatService
 from agents_back.types.sse import SSEMessage, SSEEvent, SSEEventType, ConnectionState, SSEPingRequestData, \
     SSERequestDataBase
 from uuid import uuid4
 import asyncio
 
-async def start_connection(connection_id: str, auth_service: AuthService, chat_service: ChatService):
+async def start_connection(connection_id: str):
 
     queue = asyncio.Queue(0)
     active_connections[connection_id] = ConnectionState(queue)

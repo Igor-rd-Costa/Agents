@@ -1,10 +1,10 @@
 from datetime import datetime
+from agents_back.services.dashboard_service import Dashboard
 from pydantic import BaseModel
-from agents_back.models.chat import Chat
 from agents_back.types.chat import Message, MessageType
 
 class ChatContext(BaseModel):
-    chat: Chat
+    dashboard: Dashboard
     message: Message
 
 class AgentResponse:

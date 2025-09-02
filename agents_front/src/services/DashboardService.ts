@@ -20,8 +20,8 @@ export class DashboardService {
     }
 
     public async createDashboard(name: string) {
-        const {dashboard} = await axios.post(this.backend, {name}, {withCredentials: true});
-        return dashboard;
+        const {data} = await axios.post<DashboardDTO>(this.backend, {name}, {withCredentials: true});
+        return data;
     }
 
     public async deleteDashboard(dashboardId: string) {

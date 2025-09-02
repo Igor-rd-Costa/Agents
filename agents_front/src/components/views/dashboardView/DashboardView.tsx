@@ -13,32 +13,58 @@ const DashboardView = forwardRef<DashboardViewRef>(({}, ref) => {
     const [ htmlElement, setHtmlElement ] = useState<string|string[]|null>(null);
 
     const buildDashboard = () => {
-        console.log("Here", sectionRef.current);
-        if (!sectionRef.current || !sectionRef.current.firstElementChild) {
+        if (!dashboardWrapperRef.current) {
             return;
         }
 
-        const wrapper = sectionRef.current.firstElementChild
-        wrapper.id = "dashboard";
-        if (!wrapper) {
-            return;
-        }
+        const wrapper = dashboardWrapperRef.current;
         const root = createRoot(wrapper);
         const elements = [];
+
+        const processElement = (element: HTMLElement, key: number) => {
+            const children = [];
+            for (let i = 0; i < element.children.length; i++) {
+                const child = element.children[i] as HTMLElement;
+                children.push(
+                    processElement(child, i)
+                    //<DashboardComponent key={i} id={child.id} className={child.className} inlineStyle={child.getAttribute('style') ?? undefined} html={child.innerHTML}/>
+                )
+            }
+
+            return (
+                <DashboardComponent key={key} id={element.id} className={element.className} inlineStyle={element.getAttribute('style') ?? undefined} html={wrapper.innerHTML}>
+                </DashboardComponent>
+            )
+
+            //for (let i = 0; i < element.children.length; i++) {
+            //    const child = wrapper.children[i] as HTMLElement;
+            //    const originalInnerHTML = child.innerHTML;
+            //    elements.push();
+            //}
+
+        }
+        //console.log(wrapper, wrapper.children);
+//
+        //if (wrapper.children.length === 1 && wrapper.children[0].nodeName === "DIV") {
+        //    wrapper.innerHTML = wrapper.children[0].innerHTML;
+        //}
+        
+
         for (let i = 0; i < wrapper.children.length; i++) {
             const section = wrapper.children[i] as HTMLElement;
-            if (section.nodeName === 'SECTION') {
-                const originalInnerHTML = section.innerHTML;
-                elements.push(<DashboardComponent key={i} id={section.id} className={section.className} inlineStyle={section.getAttribute('style') ?? undefined} html={originalInnerHTML}/>);
-            }
+            console.log("Child", section);
+            const originalInnerHTML = section.innerHTML;
+            elements.push(processElement(section, elements.length));
         }
+        console.log("Here", elements, wrapper);
+
         root.render(elements);
     }
 
     useEffect(() => {
         if (htmlElement !== null && sectionRef.current) {
             loadLayout(0);
-            //buildDashboard();
+            buildDashboard();
         }
     }, [htmlElement])
 

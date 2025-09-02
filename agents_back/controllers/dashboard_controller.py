@@ -11,12 +11,12 @@ router = APIRouter(prefix="/dashboard")
 @router.get("")
 async def get_dashboards(
         request: Request,
-        chat_id: Optional[ObjectId] = Query(None),
+        dashboard_id: Optional[ObjectId] = Query(None),
         auth_service: AuthService = Depends(get_auth_service),
         dashboard_service: DashboardService = Depends(get_dashboard_service)
 ):
     user = await auth_service.get_current_user(request)
-    dashboards = await dashboard_service.get_dashboards(user.id) if chat_id is None else await dashboard_service.get_dashboard(chat_id, user.id)
+    dashboards = await dashboard_service.get_dashboards(user.id) if dashboard_id is None else await dashboard_service.get_dashboard(dashboard_id, user.id)
     return dashboards
 
 

@@ -4,9 +4,6 @@ from enum import IntEnum, StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
-from agents_back.services.auth_service import AuthService
-from agents_back.services.chat_service import ChatService
-
 
 class SSEEventType(IntEnum):
     REQUEST = 0

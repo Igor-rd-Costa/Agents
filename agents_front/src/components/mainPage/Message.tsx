@@ -39,13 +39,16 @@ export default function Message({type, icon, content}: MessageProps) {
         content[0] = content[1];
         content[1] = temp;
     }
-    let tool_info: null | {message: string, tool_call: ToolCall} = null;
+
+    let tool_info: {message: string, tool_call: ToolCall} | null = null;
+
     if (isGraphicToolCall) {
         tool_info = {
             message: content[0] ? '' + (content[0].args['msg'] ?? '') : '',
             tool_call: content[1] ?? content[0]
         };
     }
+
     const tool = tool_info?.tool_call;
     const showToolInfo = () => {
         if (!isGraphicToolCall || !tool || tool.namespace !== 'agnt') {
@@ -55,7 +58,7 @@ export default function Message({type, icon, content}: MessageProps) {
             components.sideMenuRef.current?.canvas.show(tool.args['svg']);
         }
         if (tool.name == 'dashboard-build' && tool.args['html']) {
-            //components.dashboardPanelRef.current?.setHtmlElement(tool.args['html']);
+            components.activeViewRef.current?.setHtmlElement(tool.args['html']);
         }
     }
 
@@ -67,7 +70,7 @@ export default function Message({type, icon, content}: MessageProps) {
                     : <Person fontSize="large" color="primary"/>
                 }
             </div>
-            <div style={contentStyle} className="h-fit mt-6 p-2 pl-4 pr-4 text-[0.7rem] row-start-1 bg-[#202020FF] rounded-md shadow-[2px_2px_4px_1px_#FFF2]">
+            <div style={contentStyle} className="h-fit mt-6 p-2 pl-4 pr-4 text-[0.9rem] row-start-1 bg-[#202020FF] rounded-md shadow-[2px_2px_4px_1px_#FFF2]">
                 {isGraphicToolCall ?
                     (<div className="flex items-center gap-x-4">
                         <HardwareIcon className="cursor-pointer hover:text-primary" onClick={showToolInfo}/>

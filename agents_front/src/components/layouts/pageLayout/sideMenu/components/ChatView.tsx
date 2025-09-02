@@ -4,6 +4,8 @@ import AppContext from "@/contexes/appContext";
 import {Chat} from "@/types/chat/Chat"
 import {ToolCall} from "@/types/http";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import { Dashboard } from "@/types/dashboard";
+import EditIcon from "@mui/icons-material/Edit"
 
 type MessageDTO = {
     type: MessageType,
@@ -12,9 +14,9 @@ type MessageDTO = {
 }
 
 export default function ChatView() {
-    const { chatContext, dashboardContext, components } = useContext(AppContext);
+    const { dashboardContext, components } = useContext(AppContext);
     const { dashboard, setDashboard, dashboardService } = dashboardContext;
-    const { chat, setChat, chatService } = chatContext;
+
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState<MessageDTO[]>([]);
     const [inputValue, setInputValue] = useState('');
@@ -23,9 +25,9 @@ export default function ChatView() {
     const messagesWrapper = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (dashboard) {
+        if (dashboard.getId()) {
             new Promise<void>(async (resolve) => {
-               const data = await dashboardService.getMessages(dashboard.id);
+               const data = await dashboardService.getMessages(dashboard.getId()!);
                setMessages(data.messages);
                resolve();
             }).then(() => {});
@@ -44,7 +46,7 @@ export default function ChatView() {
             return;
         }
 
-        const chatConnection = chat.getConnection();
+        const chatConnection = dashboard.getConnection();
 
         if (!chatConnection.getIsConnected()) {
             console.log("Not connected!");
@@ -78,9 +80,9 @@ export default function ChatView() {
                                 if (tool.name === 'canvas-show' && tool.args['svg'] && components.sideMenuRef.current) {
                                     components.sideMenuRef.current.canvas.show(tool.args['svg']);
                                 }
-                                //if (tool.name === 'dashboard-build' && tool.args['html'] && components.dashboardPanelRef.current) {
-                                //    components.dashboardPanelRef.current.setHtmlElement(tool.args['html'])
-                                //}
+                                if (tool.name === 'dashboard-build' && tool.args['html'] && components.activeViewRef.current) {
+                                    components.activeViewRef.current.setHtmlElement(tool.args['html'])
+                                }
                                 if (tool.name === 'message' && tool.args['msg']) {
                                     setMessages([
                                         ...messages,
@@ -93,18 +95,13 @@ export default function ChatView() {
                 }
             }
             if (extraData) {
-                const chatDTO = extraData.chat;
+                const dashboardDTO = extraData.chat;
                 
-                if (chatDTO) {
-                    chatDTO.createdAt = new Date(chatDTO.createdAt);
-                    chatDTO.updatedAt = new Date(chatDTO.updatedAt);
-                    setChat(new Chat(
-                        chatDTO.id,
-                        chatDTO.name,
-                        chatDTO.createdAt,
-                        chatDTO.updatedAt,
-                        chatConnection
-                    ));
+                if (dashboardDTO) {
+                    dashboardDTO.createdAt = new Date(dashboardDTO.createdAt);
+                    dashboardDTO.updatedAt = new Date(dashboardDTO.updatedAt);
+                    const { id, name, createdAt, updatedAt } = dashboardDTO;
+                    setDashboard(new Dashboard(id, name, createdAt, updatedAt, chatConnection));
                 }
             }
         }));
@@ -121,8 +118,22 @@ export default function ChatView() {
         setInputValue(input.current?.innerText?.trim() ?? '');
     }
 
+    const renameDashboard = () => {
+
+    }
+
     return (
-        <div ref={wrapperRef} className="h-full w-full overflow-hidden relative overflow-y-hidden grid grid-rows-[1fr_auto] pb-4 justify-items-center pt-0 gap-8">
+        <div ref={wrapperRef} className="h-full w-full overflow-hidden relative overflow-y-hidden grid grid-rows-[auto_1fr_auto] justify-items-center pt-0 gap-8">
+            <div className="font-mono flex justify-items-center gap-x-1">
+                {dashboard.getId() !== null && (
+                    <>
+                        {dashboard.getName()}
+                        <button onClick={renameDashboard} className="w-[24px] h-[24px]">
+                            <EditIcon className="hover:text-white cursor-pointer" fontSize="small"/>
+                        </button>
+                    </>
+                )}
+            </div>
             <div ref={messagesWrapper} className="overflow-y-scroll gap-y-4 flex flex-col w-[95%] p-2 pt-8">
                 {messages.map((m, i) => {                    
                     return <Message key={i} type={m.type} icon={m.src} content={m.content}/>
@@ -130,19 +141,21 @@ export default function ChatView() {
                 )}
                 {message !== "" ? <Message type={MessageType.MESSAGE} icon="agent" content={message}/> : <></>}
             </div>
-            <form onSubmit={async (e) => {
-                e.preventDefault();
-                await onSubmit();
-            }} className="h-[8rem] pl-2 pr-2 w-full items-center">
-                <div className="relative border border-primary bg-[#252525] rounded-md w-full h-full text-gray-200">
-                    <div ref={input} className="w-full overflow-y-scroll h-full p-1 pl-2 pr-2 outline-none break-all shadow-[inset_0px_0px_6px_2px_#111] rounded-md"
-                 onKeyDown={onKeyDown} onInput={onInput} contentEditable="true"></div>
-                    <button type="submit" className="bg-primary w-[32px] h-[32px] rounded-md text-background absolute bottom-1 right-1 cursor-pointer hover:bg-primaryLight disabled:hidden"
-                    disabled={inputValue === ''}>
-                        <ArrowUpwardIcon/>
-                    </button>
-                </div>
-            </form>
+            <div className="h-[8rem] p-3 w-full items-center">
+                <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    await onSubmit();
+                }} className="w-full h-full">
+                    <div className="relative border border-primary bg-[#252525] rounded-md w-full h-full text-gray-200">
+                        <div ref={input} className="w-full overflow-y-scroll h-full p-1 pl-2 pr-2 outline-none break-all shadow-[inset_0px_0px_6px_2px_#111] rounded-md text-[0.9rem]"
+                    onKeyDown={onKeyDown} onInput={onInput} contentEditable="true"></div>
+                        <button type="submit" className="bg-primary w-[32px] h-[32px] rounded-md text-background absolute bottom-1 right-1 cursor-pointer hover:bg-primaryLight disabled:hidden"
+                        disabled={inputValue === ''}>
+                            <ArrowUpwardIcon/>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     )
 }

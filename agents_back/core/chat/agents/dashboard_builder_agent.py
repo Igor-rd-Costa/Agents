@@ -55,8 +55,7 @@ class DashboardBuilderAgent(AgentBase):
     async def invoke(self, chat: ChatContext) -> AgentResponse:
         print("Invoking Dashboard agent")
         messages = [
-            ("system", prompt),
-            ("user", chat.message.content)
+            ("system", build_prompt(chat.message.content))
         ]
 
         template = ChatPromptTemplate.from_messages(messages)
@@ -90,7 +89,7 @@ class DashboardBuilderAgent(AgentBase):
             name="dashboard-build",
             args = {
                 "target": None,
-                "html": msg_info["html"]
+                "html": msg_info["layouts"]
             }
         )
 

@@ -1,13 +1,8 @@
-from contextvars import ContextVar
-from typing import Optional
 from agents_back.middleware.request_middleware import request_context
+from agents_back.services.dashboard_service import DashboardService, get_dashboard_service
 from agents_back.utils.utils import Services, services_context
 from fastapi import APIRouter, Depends, Request, HTTPException
-from fastapi.params import Query
 from agents_back.services.auth_service import AuthService, get_auth_service
-from agents_back.services.chat_service import ChatService, get_chat_service
-from agents_back.types.chat import DeleteChatDTO
-from agents_back.types.general import ObjectId
 from starlette.responses import StreamingResponse
 from agents_back.types.sse import SSEMessage, SSEEvent
 from agents_back.utils.http import build_connection_id, active_connections, start_connection, process_message
@@ -18,11 +13,11 @@ router = APIRouter(prefix="/chat")
 async def chat(message: SSEMessage,
                request: Request,
                auth_service: AuthService = Depends(get_auth_service),
-               chat_service: ChatService = Depends(get_chat_service)):
+               dashboard_service: DashboardService = Depends(get_dashboard_service)):
 
     services_context.set(Services(
         auth_service=auth_service,
-        chat_service=chat_service,
+        dashboard_service=dashboard_service,
         request=request_context.get()
     ))
 
@@ -39,7 +34,7 @@ async def chat(message: SSEMessage,
         }
 
         return StreamingResponse(
-            start_connection(connection_id, auth_service, chat_service),
+            start_connection(connection_id),
             media_type="text/event-stream",
             headers=headers,
         )
@@ -48,35 +43,3 @@ async def chat(message: SSEMessage,
         raise HTTPException(status_code=404)
 
     return ""
-
-@router.get("")
-async def get_chats(
-        request: Request,
-        chat_id: Optional[ObjectId] = Query(None),
-        auth_service: AuthService = Depends(get_auth_service),
-        chat_service: ChatService = Depends(get_chat_service)
-):
-    user = await auth_service.get_current_user(request)
-    chats = await chat_service.get_chats(user.id) if chat_id is None else await chat_service.get_chat(chat_id, user.id)
-    return chats
-
-@router.delete("")
-async def delete_chat(
-        dto: DeleteChatDTO,
-        request: Request,
-        auth_service: AuthService = Depends(get_auth_service),
-        chat_service: ChatService = Depends(get_chat_service)
-):
-    user = await auth_service.get_current_user(request)
-    return await chat_service.delete_chat(dto.id, user.id)
-
-@router.get("/{chat_id}/messages")
-async def get_messages(
-        request: Request,
-        chat_id: ObjectId,
-        auth_service: AuthService = Depends(get_auth_service),
-        chat_service: ChatService = Depends(get_chat_service)
-):
-    user = await auth_service.get_current_user(request)
-    chats = await chat_service.get_messages(chat_id)
-    return chats

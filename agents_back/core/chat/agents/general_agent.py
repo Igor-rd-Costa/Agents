@@ -1,7 +1,6 @@
 from datetime import datetime
 from langchain_groq.chat_models import ChatGroq
 from langchain_core.prompts.chat import ChatPromptTemplate
-from agents_back.services import chat_service
 from agents_back.types.chat import Message, MessageType
 from agents_back.utils.tools import parse_tool_calls
 from agents_back.utils.utils import services_context
@@ -53,15 +52,15 @@ class GeneralAgent(AgentBase):
         print("Invoking General Agent")
 
         services = services_context.get()
-        chat_service = services.chat_service
+        dashboard_service = services.dashboard_service
 
         messages = [
             ("system", base_prompt),
         ]
 
-        db_messages = await chat_service.get_messages(chat.chat.id)
+        db_messages = await dashboard_service.get_messages(chat.dashboard.id)
 
-        message_count = len(db_messages.messages if db_messages else 0)
+        message_count = len(db_messages.messages) if db_messages else 0
         for i in reversed(range(0, message_count if message_count <= 10 else 10)):
             message = db_messages.messages[i]
             messages.append(chat_messages_to_agent_message(message))

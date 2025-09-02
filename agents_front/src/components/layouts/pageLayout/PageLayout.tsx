@@ -1,3 +1,4 @@
+'use client'
 import React, {useContext, useEffect, useRef, useState} from "react";
 import SideMenu, {SideMenuRef} from "@/components/layouts/pageLayout/sideMenu/SideMenu";
 import AppContext from "@/contexes/appContext";
@@ -16,7 +17,7 @@ export default function PageLayout({children}: React.PropsWithChildren) {
     }, []);
 
     useEffect(() => {
-        localStorage.setItem('side-menu-isExpanded', String(sideMenuIsExpanded));
+        localStorage?.setItem('side-menu-isExpanded', String(sideMenuIsExpanded));
     }, [sideMenuIsExpanded]);
 
     const onResizeBarMouseDown = (e: React.MouseEvent) => {
