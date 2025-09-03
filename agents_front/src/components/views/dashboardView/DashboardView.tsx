@@ -2,6 +2,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import DashboardComponent from "@/components/views/dashboardView/components/DashboardComponent";
+import Chart from "@/components/views/dashboardView/dsl/Chart";
 
 export type DashboardViewRef = {
     setHtmlElement: (element: string|null) => void
@@ -74,6 +75,9 @@ const DashboardView = forwardRef<DashboardViewRef>(({}, ref) => {
         };
     });
 
+    const jsonString = "{ \"name\": \"Vendas por Tempo\", \"description\": \"Bar chart showing total sales amount and quantity of products sold over time\", \"type\": \"vertical bars\", \"mainColor\": \"red\", \"backgroundColor\": \"#222222\", \"columns\": [\"Data\"], \"rows\": [\"ValorTotal\", \"QtdProdutos\"] }";
+    const blueprint = JSON.parse(jsonString);
+
     const loadLayout = (index: number) => {
         if (!htmlElement || !dashboardWrapperRef.current) {
             return;
@@ -84,9 +88,9 @@ const DashboardView = forwardRef<DashboardViewRef>(({}, ref) => {
         target.innerHTML = isDashboardLayout ? htmlElement[index] : htmlElement;
         console.log("Html", htmlElement);
         const borderColor = isDashboardLayout ? 'white' : 'transparent';
-        target.style.width = '1920px';
-        target.style.height = '1080px';
-        target.id = 'dashboard';
+        //target.style.width = '1920px';
+        //target.style.height = '1080px';
+        //target.id = 'dashboard';
         const style = document.createElement('style');
         style.textContent = `
         #dashboard section {
@@ -103,7 +107,9 @@ const DashboardView = forwardRef<DashboardViewRef>(({}, ref) => {
         <>
             <section ref={sectionRef} className="h-full w-full bg-[#2A2A2A] p-8 overflow-scroll">
                 <div className="rounded-[1rem] shadow-[0px_0px_20px_-2px_#0005] bg-[#0002] w-[1930px] h-[1090px] flex items-center justify-center">
-                    <div ref={dashboardWrapperRef} className="bg-[#333] w-[1920px] h-[1080px]"></div>
+                    <div ref={dashboardWrapperRef} className="bg-[#333] w-[1920px] h-[1080px]">
+                        <Chart blueprint={blueprint}/>
+                    </div>
                 </div>
             </section>
             { (htmlElement && typeof htmlElement !== 'string') && (
