@@ -1,13 +1,14 @@
-type ChartType = 'vertical bars' | 'horizontal bars'
-
 type FieldKey = string;
 
-type Chart = {
+type ComponentType = 'chart';
+
+type ChartType = 'calendar';
+
+export type Component = {
     name: string,
     description: string,
-    type: ChartType
-    mainColor: string,
-    backgroundColor: string,
+    type: ComponentType,
+    subType: ChartType
     columns: FieldKey[],
     rows: FieldKey[]
 }

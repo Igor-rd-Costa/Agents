@@ -7,13 +7,16 @@ export default function PageLayout({children}: React.PropsWithChildren) {
     const { components } = useContext(AppContext);
     const sideMenuRef = useRef<SideMenuRef>(null);
 
-    const isExpanded = (localStorage.getItem('side-menu-isExpanded') ?? 'true') === 'true';
-    const sideMenuExpandedWidth = parseInt(localStorage.getItem('side-menu-expandedWidth') ?? '350');
-    const [ sideMenuSize, setSideMenuSize ] = useState<number>(sideMenuExpandedWidth);
-    const [ sideMenuIsExpanded, setSideMenuIsExpanded ] = useState<boolean>(isExpanded);
+    const [ sideMenuSize, setSideMenuSize ] = useState<number>(300);
+    const [ sideMenuIsExpanded, setSideMenuIsExpanded ] = useState<boolean>(false);
 
     useEffect(() => {
         components.setSideMenuRef(sideMenuRef);
+
+        const sideMenuExpandedWidth = parseInt(localStorage?.getItem('side-menu-expandedWidth') ?? '350');
+        const isExpanded = (localStorage?.getItem('side-menu-isExpanded') ?? 'true') === 'true';
+        setSideMenuSize(sideMenuExpandedWidth);
+        setSideMenuIsExpanded(isExpanded);
     }, []);
 
     useEffect(() => {
@@ -43,7 +46,7 @@ export default function PageLayout({children}: React.PropsWithChildren) {
 
         const onResizeBarMouseUp = () => {
             setSideMenuSize(size);
-            localStorage.setItem('side-menu-expandedWidth', String(size));
+            localStorage?.setItem('side-menu-expandedWidth', String(size));
             document.removeEventListener('mousemove', onResizeBarMouseMove);
             document.removeEventListener('mouseup', onResizeBarMouseMove);
             document.body.style.cursor = ''

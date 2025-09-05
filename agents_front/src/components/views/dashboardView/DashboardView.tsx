@@ -2,7 +2,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import DashboardComponent from "@/components/views/dashboardView/components/DashboardComponent";
-import Chart from "@/components/views/dashboardView/dsl/Chart";
+import Chart from "@/components/views/dashboardView/dsl/ChartComponent";
+import Component, { ComponentRef } from "./dsl/Component";
 
 export type DashboardViewRef = {
     setHtmlElement: (element: string|null) => void
@@ -12,6 +13,7 @@ const DashboardView = forwardRef<DashboardViewRef>(({}, ref) => {
     const sectionRef = useRef<HTMLElement>(null);
     const dashboardWrapperRef = useRef<HTMLDivElement>(null);
     const [ htmlElement, setHtmlElement ] = useState<string|string[]|null>(null);
+    const componentRef = useRef<ComponentRef>(null);
 
     const buildDashboard = () => {
         if (!dashboardWrapperRef.current) {
@@ -75,7 +77,7 @@ const DashboardView = forwardRef<DashboardViewRef>(({}, ref) => {
         };
     });
 
-    const jsonString = "{ \"name\": \"Vendas por Tempo\", \"description\": \"Bar chart showing total sales amount and quantity of products sold over time\", \"type\": \"vertical bars\", \"mainColor\": \"red\", \"backgroundColor\": \"#222222\", \"columns\": [\"Data\"], \"rows\": [\"ValorTotal\", \"QtdProdutos\"] }";
+    const jsonString = "{ \"name\": \"Vendas por Tempo\", \"description\": \"Bar chart showing total sales amount and quantity of products sold over time\", \"type\": \"chart\", \"subType\": \"calendar\", \"mainColor\": \"red\", \"backgroundColor\": \"#222222\", \"columns\": [\"Data\"], \"rows\": [\"Valor Total\", \"Qtd Produtos\"] }";
     const blueprint = JSON.parse(jsonString);
 
     const loadLayout = (index: number) => {
@@ -103,12 +105,18 @@ const DashboardView = forwardRef<DashboardViewRef>(({}, ref) => {
         }
     }
 
+    const reload = () => {
+        componentRef.current?.reload();
+    }
+
     return (
         <>
-            <section ref={sectionRef} className="h-full w-full bg-[#2A2A2A] p-8 overflow-scroll">
+            <section ref={sectionRef} className="h-full w-full bg-[#2A2A2A] p-12 overflow-scroll">
                 <div className="rounded-[1rem] shadow-[0px_0px_20px_-2px_#0005] bg-[#0002] w-[1930px] h-[1090px] flex items-center justify-center">
-                    <div ref={dashboardWrapperRef} className="bg-[#333] w-[1920px] h-[1080px]">
-                        <Chart blueprint={blueprint}/>
+                    <div ref={dashboardWrapperRef} className="relative bg-[#333] w-[1920px] h-[1080px]">
+                        <Component ref={componentRef} blueprint={blueprint}/>
+                        <button className="absolute top-[-42px] left-0 border border-transparent shadow 
+                        rounded p-1 bg-primary font-bold" onClick={reload}>Reload</button>
                     </div>
                 </div>
             </section>
