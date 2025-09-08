@@ -13,6 +13,8 @@ export type ComponentRef = {
 const Component = forwardRef<ComponentRef, ComponentProps>((props, ref) => {
     const componentRef = useRef<ComponentRef>(null);
 
+    console.log("Here", props);
+
     useImperativeHandle(ref, () => {
         return {
             reload: componentRef.current?.reload ?? (() => {})
@@ -27,7 +29,7 @@ const Component = forwardRef<ComponentRef, ComponentProps>((props, ref) => {
     }, [props.blueprint.type]);
 
     return (
-        <div className="w-[650px] h-[500px]">
+        <div className="w-[350px] h-[300px]">
             <ComponentImpl ref={componentRef} blueprint={props.blueprint} />
         </div>
     );

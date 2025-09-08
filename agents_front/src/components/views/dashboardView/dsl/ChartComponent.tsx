@@ -28,7 +28,10 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
     };
 
     const reload = () => {
-        console.log("Chart reloading!");
+        //const chart = echarts.init(chartContainerRef.current);
+        //if (chart.setOption) {
+        //    chart.setOption(chartOptions);
+        //}
     };
 
     const goToPreviousMonth = () => {
@@ -70,7 +73,6 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
             .then(result => {
                 const d = result.data.queryResult;
 
-                console.log("Blueprint", d);
                 const rows: {[key: string]: string} = {};
                 const cols: {[key: string]: string} = {};
 
@@ -101,7 +103,6 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
                 });
 
                 setData({rows, cols});
-                console.log("Data", {rows, cols});
             });
     }, []);
 
@@ -111,18 +112,67 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
             const year = currentDate.year;
             const month = currentDate.month;
 
-            const days = [];
-            console.log("Month", month);
+            const days: any[] = [];
+
+            // Determine number of leading days from previous month to fill the first week (Monday-first)
+            const firstDateOfMonth = new Date(year, month - 1, 1);
+            let firstWeekday = firstDateOfMonth.getDay(); // 0=Sun,1=Mon,...6=Sat
+            if (firstWeekday === 0) firstWeekday = 7; // Treat Sunday as 7 for Monday-first
+            const extraPrevMonthDays = (firstWeekday + 6) % 7; // 0..6 number of days before Monday
+
+            const prevMonth = month === 1 ? 12 : month - 1;
+            const prevYear = month === 1 ? year - 1 : year;
+            const prevMonthLastDay = new Date(year, month - 1, 0).getDate();
+
+            // Add leading days from previous month
+            for (let i = extraPrevMonthDays; i > 0; i--) {
+                const dayNum = prevMonthLastDay - i + 1;
+                days.push([`${prevYear}-${prevMonth}-${dayNum}`]);
+            }
+
+            // Push all days of current month
             while (date.getMonth() + 1 === month) {
                 const day = date.getDate();
                 days.push([`${year}-${month}-${day}`]);
                 date.setDate(day + 1);
             }
 
+            // date currently points to the first day of next month
+            const lastDayOfMonth = new Date(year, month, 0).getDate();
+            const lastDate = new Date(year, month - 1, lastDayOfMonth);
+            // In JS getDay(): 0=Sun, 1=Mon, ... 6=Sat. We are using Monday as first day (firstDay:1)
+            let lastWeekday = lastDate.getDay();
+            if (lastWeekday === 0) lastWeekday = 7; // Treat Sunday as 7 for Monday-first
+            const extraNextMonthDays = (7 - lastWeekday) % 7; // 0..6
+
+            // Add trailing days from next month to fill the last week
+            if (extraNextMonthDays > 0) {
+                const nextMonth = month === 12 ? 1 : month + 1;
+                const nextYear = month === 12 ? year + 1 : year;
+                for (let i = 1; i <= extraNextMonthDays; i++) {
+                    days.push([`${nextYear}-${nextMonth}-${i}`]);
+                }
+            }
+
+            // Compute start and end range to include the leading and trailing adjacent-month days
+            const startRangeDate = extraPrevMonthDays > 0
+                ? new Date(prevYear, prevMonth - 1, prevMonthLastDay - extraPrevMonthDays + 1)
+                : new Date(year, month - 1, 1);
+            const startYear = startRangeDate.getFullYear();
+            const startMonth = startRangeDate.getMonth() + 1;
+            const startDay = startRangeDate.getDate();
+
+            const endRangeDate = extraNextMonthDays > 0
+                ? new Date(year, month - 1, lastDayOfMonth + extraNextMonthDays)
+                : new Date(year, month - 1, lastDayOfMonth);
+            const endYear = endRangeDate.getFullYear();
+            const endMonth = endRangeDate.getMonth() + 1;
+            const endDay = endRangeDate.getDate();
+
             return {
                 days,
-                range: {year, month}
-            } as {days: any[][], range: {year: number, month: number}};
+                range: { year, month, startYear, startMonth, startDay, endYear, endMonth, endDay }
+            } as {days: any[][], range: {year: number, month: number, startYear: number, startMonth: number, startDay: number, endYear: number, endMonth: number, endDay: number}};
         }
 
         const dates = buildDates();
@@ -131,14 +181,16 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
 
         const bimDates = dates.days.map(day => {
             const parts = day[0].split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            const dayPart = parseInt(parts[2]);
+            const monthPart = parseInt(parts[1]);
+            const yearPart = parts[0];
+            return `${dayPart < 10 ? '0' : ''}${dayPart}/${monthPart < 10 ? '0' : ''}${monthPart}/${yearPart}`;
         });
 
         if (data?.cols) {
-            console.log("Cols", data?.cols);
             Object.keys(data?.cols).forEach(key => {
                 bimDates.forEach((date, index) => {
-                    const idx = data?.cols[key].findIndex(d => d === date);
+                    const idx = data?.cols[key].findIndex((d: string) => d === date);
                     if (idx !== -1) {
                         const val: {[key: string]: string} = {};
                         keys.forEach(rowKey => {
@@ -150,31 +202,63 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
             });
         }
 
-        const heatRanking = dateList
-            .map(date => {
-                const d = date[1] ?? 0;
-                return d;
-            })
-            .sort(data => {
-                if (data === 0) {
-                    return -1;
-                }
-                return 1;
-            });
-        console.log("Rank", heatRanking);
-        const heatmapData = [];
-        const daylabels = [];
+        // Build per-date ranks while preserving original indices
+        const valuesWithIndex = dateList.map((date, idx) => {
+            const meta = date[1];
+            let numeric = 0;
+            if (meta && typeof meta === 'object') {
+                const vals = Object.values(meta as Record<string, unknown>);
+                const first = vals[0];
+                const num = typeof first === 'number' ? first : parseFloat(String(first).replace(/\./g, '').replace(/,/g, '.'));
+                numeric = isNaN(num) ? 0 : num;
+            } else if (typeof meta === 'number' || typeof meta === 'string') {
+                const num = typeof meta === 'number' ? meta : parseFloat(String(meta).replace(/\./g, '').replace(/,/g, '.'));
+                numeric = isNaN(num) ? 0 : num;
+            }
+            return { idx, value: numeric };
+        });
+        const nonZero = valuesWithIndex.filter(v => v.value > 0);
+        nonZero.sort((a, b) => a.value - b.value);
+
+        const rankPerIndex: number[] = new Array(dateList.length).fill(0);
+        let currentRank = 0;
+        for (let i = 0; i < nonZero.length; i++) {
+            currentRank += 1;
+            rankPerIndex[nonZero[i].idx] = currentRank;
+        }
+        const hasData = nonZero.length > 0;
+        const minRank = hasData ? 1 : 0;
+        const maxRank = hasData ? currentRank : 1;
+
+        const heatmapDataCurrent: any[] = [];
+        const heatmapDataOverflow: any[] = [];
+        const daylabels: any[] = [];
         for (let i = 0; i < dateList.length; i++) {
-            heatmapData.push([dateList[i][0], dateList[i][1] ?? '', Math.random() * 300]);
-            daylabels.push([dateList[i][0]]);
+            const dateStr = dateList[i][0] as string;
+            const [yy, mm] = dateStr.split('-').map(v => parseInt(v, 10));
+            const isCurrentMonth = (yy === currentDate.year && mm === currentDate.month);
+
+            // Label per day, gray out if not in current month
+            daylabels.push({
+                value: [dateStr],
+                label: {
+                    color: isCurrentMonth ? '#000' : '#aaa'
+                }
+            });
+
+            // Use rank per calendar index; assign out-of-range (minRank-1) for overflow
+            const rankValue = rankPerIndex[i] ?? 0;
+            if (isCurrentMonth) {
+                heatmapDataCurrent.push([dateStr, rankValue]);
+            } else {
+                heatmapDataOverflow.push([dateStr, (minRank - 1)]);
+            }
         }
 
-        // Calculate min and max values from heatmap data for proper color mapping
-        const heatmapValues = heatmapData.map(item => item[2]).filter(val => val !== undefined);
-        const minValue = Math.min(...heatmapValues);
-        const maxValue = Math.max(...heatmapValues);
+        // visualMap domain: use rank bounds
+        const minValue = minRank;
+        const maxValue = maxRank;
 
-        console.log("Date", heatmapData);
         dateList.forEach(date => {
             if (date[1] === undefined) {
                 return;
@@ -187,15 +271,23 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
 
         const options = {
             tooltip: {
-                formatter: function (params) {
-                    let value = '';
-                    Object.keys(params.data[1]).forEach((key, idx) => {
-                        value += `${key}: ${params.data[1][key]}`;
-                        if (idx < keys.length - 1) {
-                            value += '<br/>';
-                        }
-                    });
-                    return value;
+                formatter: function (params: any) {
+                    const dataArr = Array.isArray(params.data) ? params.data : params.value;
+                    const dateKey = Array.isArray(dataArr) ? dataArr[0] : undefined;
+                    if (!dateKey) return '';
+                    const idx = dateList.findIndex(d => d[0] === dateKey);
+                    if (idx === -1) return '';
+                    const meta = dateList[idx][1];
+                    if (meta && typeof meta === 'object') {
+                        const metaKeys = Object.keys(meta);
+                        let value = '';
+                        metaKeys.forEach((key, i) => {
+                            value += `${key}: ${meta[key]}`;
+                            if (i < metaKeys.length - 1) value += '<br/>';
+                        });
+                        return value;
+                    }
+                    return '';
                 }
             },
             visualMap: {
@@ -203,13 +295,17 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
                 min: minValue,
                 max: maxValue,
                 calculable: true,
-                seriesIndex: [1], // Fixed: heatmap series is at index 1
+                seriesIndex: [1, 2], // include both heatmap series (current and overflow)
                 orient: 'horizontal',
                 left: 'center',
                 bottom: 20,
                 inRange: {
                     color: ['#e0ffff', '#006edd'],
                     opacity: 0.3
+                },
+                outOfRange: {
+                    color: '#cccccc',
+                    opacity: 0.4
                 },
                 controller: {
                     inRange: {
@@ -235,7 +331,7 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
                 {
                     left: 0,
                     top: 0,
-                    cellSize: [92.57, 91.6],
+                    cellSize: ['auto', 'auto'],
                     yearLabel: { show: false },
                     orient: 'vertical',
                     dayLabel: {
@@ -245,7 +341,10 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
                     monthLabel: {
                         show: false
                     },
-                    range: `${dates.range.year}-${dates.range.month}`,
+                    range: [
+                        `${dates.range.startYear}-${dates.range.startMonth}-${dates.range.startDay}`,
+                        `${dates.range.endYear}-${dates.range.endMonth}-${dates.range.endDay}`
+                    ],
                 }
             ],
             series: [
@@ -255,23 +354,33 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
                     symbolSize: 0,
                     label: {
                         show: true,
-                        formatter: function (params) {
+                        formatter: function (params: any) {
                             var d = echarts.number.parseDate(params.value[0]);
                             return d.getDate();
                         },
                         color: '#000'
                     },
-                    data: daylabels,    
+                    data: [],
                     silent: true
                 },
                 {
                     name: blueprint.name,
                     type: 'heatmap',
                     coordinateSystem: 'calendar',
-                    data: heatmapData
+                    data: heatmapDataCurrent
+                },
+                {
+                    name: `${blueprint.name}-overflow`,
+                    type: 'heatmap',
+                    coordinateSystem: 'calendar',
+                    data: heatmapDataOverflow,
+                    tooltip: { show: false },
+                    silent: true
                 }
             ]
         };
+
+        console.log("Data", {daylabels, heatmapDataCurrent, heatmapDataOverflow});
 
         setChartOptions(options);
     }, [data, currentDate]);
@@ -287,11 +396,20 @@ const ChartComponent = forwardRef<ComponentRef, ChartComponentProps>(({blueprint
         return ({children}: {children: React.ReactNode}) => {
             if (blueprint.subType === 'calendar') {
                 return (
-                    <div className="w-full h-full border grid grid-rows-[auto_1fr]">
-                        <div className="grid grid-cols-[auto_1fr_auto] border-b h-[2.5rem]">
-                            <div className="w-[2.5rem] h-[2.5rem] text-[1.6rem] border-r flex justify-center items-center ml-4 pr-4 cursor-pointer" onClick={goToPreviousMonth}>&lt;</div>
-                            <div className="flex justify-center items-center text-[1.6rem]">{getMonthName(currentDate.month)} {currentDate.year}</div>
-                            <div className="w-[2.5rem] h-[2.5rem] text-[1.6rem] col-start-3 border-l flex justify-center items-center mr-4 pl-4 cursor-pointer" onClick={goToNextMonth}>&gt;</div>
+                    <div className="w-full h-full border grid grid-rows-[auto_auto_1fr]">
+                        <div className="grid grid-cols-7 border-b h-[2rem]">
+                            <div className="w-full h-[2rem] text-[1.6rem] border-r flex justify-center items-center cursor-pointer" onClick={goToPreviousMonth}>&lt;</div>
+                            <div className="flex justify-center items-center border-r col-span-5 text-[1rem]">{getMonthName(currentDate.month)} {currentDate.year}</div>
+                            <div className="w-full h-[2rem] text-[1.6rem] flex justify-center items-center cursor-pointer" onClick={goToNextMonth}>&gt;</div>
+                        </div>
+                        <div className="h-[1rem] grid grid-cols-7 *:flex *:justify-center *:items-center *:border-r *:border-b *:last:border-r-0 text-[0.8rem]">
+                            <div>Seg</div>
+                            <div>Ter</div>
+                            <div>Qua</div>
+                            <div>Qui</div>
+                            <div>Sex</div>
+                            <div>Sab</div>
+                            <div>Dom</div>
                         </div>
                         {children}
                     </div>
